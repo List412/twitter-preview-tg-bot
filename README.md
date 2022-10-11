@@ -1,8 +1,11 @@
-ботик умеет брать твиты по ссылке и скидывать их в телеграм)) 
+Ботик умеет брать твиты по ссылке и скидывать их в телеграм)) 
 
 # build
 
+создать .env на основе default.env
+
 для линуха:
-`GOOS=linux go build -o bot cmd/bot/main.go
-`
+```
+GOOS=linux go build -o bot cmd/bot/main.go
+```
 
