@@ -24,6 +24,9 @@ type Client struct {
 
 const getTweet = "tweet"
 
+// followers count
+// https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=konstruktors
+
 func (c *Client) GetTweet(id string) (*Tweet, error) {
 	q := url.Values{}
 	q.Add("id", id)

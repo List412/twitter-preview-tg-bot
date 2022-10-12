@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/url"
 	"strings"
+	"tweets-tg-bot/internal/clients/twitter/scrapper"
 	twimg_cdn "tweets-tg-bot/internal/clients/twitter/twimg-cdn"
 )
 
@@ -38,14 +39,28 @@ func (p *processor) doCmd(text string, chatId int, username string) error {
 	}
 }
 
-func generateText(tweet *twimg_cdn.Tweet) string {
+func generateText(tweet *twimg_cdn.Tweet, selfReplays []scrapper.SelfReplay) string {
 	result := ""
 
-	result += fmt.Sprintf("%s (@%s) \n\n", tweet.User.Name, tweet.User.ScreenName)
+	result += fmt.Sprintf("%s (@%s) tweeted:\n", tweet.User.Name, tweet.User.ScreenName)
 
-	result += fmt.Sprintf("%s \n\n", tweet.Text)
+	result += fmt.Sprintf("%s \n", tweet.Text)
 
-	result += fmt.Sprintf("лайков %d", tweet.FavoriteCount)
+	if tweet.Parent != nil {
+		parent := tweet.Parent
+		result += fmt.Sprintf("\n———\n")
+		result += fmt.Sprintf("in replay to: %s (@%s):\n", parent.User.Name, parent.User.ScreenName)
+		result += fmt.Sprintf("%s\n\n", parent.Text)
+	}
+
+	if len(selfReplays) > 0 {
+		for _, r := range selfReplays {
+			result += fmt.Sprintf("%s\n", r.Text)
+		}
+		result += fmt.Sprintf("\n")
+	}
+
+	result += fmt.Sprintf("%s | лайков %d", tweet.CreatedAt, tweet.FavoriteCount)
 
 	return result
 }
@@ -57,7 +72,12 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 		return err
 	}
 
-	message := generateText(tweet)
+	selfReplays, err := p.twWeb.GetTweetSelfReplays(id)
+	if err != nil {
+		selfReplays = nil
+	}
+
+	message := generateText(tweet, selfReplays)
 
 	if len(tweet.Photos) == 1 {
 		return p.tg.SendPhoto(chatId, message, photos(tweet)[0])

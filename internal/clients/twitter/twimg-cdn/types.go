@@ -14,6 +14,7 @@ type Tweet struct {
 	Video             *Video    `json:"video"`
 	ConversationCount int       `json:"conversation_count"`
 	NewsActionType    string    `json:"news_action_type"`
+	Parent            *Parent   `json:"parent"`
 }
 
 type User struct {
@@ -22,6 +23,18 @@ type User struct {
 	ProfileImageUrlHttps string `json:"profile_image_url_https"`
 	ScreenName           string `json:"screen_name"`
 	Verified             bool   `json:"verified"`
+}
+
+type Parent struct {
+	Lang          string    `json:"lang"`
+	ReplyCount    int       `json:"reply_count"`
+	RetweetCount  int       `json:"retweet_count"`
+	FavoriteCount int       `json:"favorite_count"`
+	CreatedAt     time.Time `json:"created_at"`
+	Entities      Entities  `json:"entities"`
+	IdStr         string    `json:"id_str"`
+	Text          string    `json:"text"`
+	User          User      `json:"user"`
 }
 
 type Entities struct {

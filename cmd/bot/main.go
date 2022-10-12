@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
+	"tweets-tg-bot/internal/clients/twitter/scrapper"
 	twimg_cdn "tweets-tg-bot/internal/clients/twitter/twimg-cdn"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/consumer/event-consumer"
@@ -19,6 +20,7 @@ func main() {
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
 		twimg_cdn.NewClient(cfg.Tweeter.Host),
+		scrapper.NewClient("twitter.com"),
 	)
 
 	consumer := event_consumer.NewConsumer(eventProcessor, eventProcessor, cfg.Consumer.BatchSize)

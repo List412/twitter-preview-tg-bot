@@ -4,15 +4,17 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"tweets-tg-bot/internal/clients/telegram"
+	"tweets-tg-bot/internal/clients/twitter/scrapper"
 	twimg_cdn "tweets-tg-bot/internal/clients/twitter/twimg-cdn"
 	"tweets-tg-bot/internal/events"
 )
 
-func New(tgClient *telegram.Client, twClient *twimg_cdn.Client) *processor {
+func New(tgClient *telegram.Client, twClient *twimg_cdn.Client, twWeb *scrapper.Client) *processor {
 	return &processor{
 		tg:     tgClient,
 		offset: math.MaxInt64,
 		tw:     twClient,
+		twWeb:  twWeb,
 	}
 }
 
@@ -28,6 +30,7 @@ type processor struct { //todo rename lol
 	tg     *telegram.Client
 	offset int
 	tw     *twimg_cdn.Client
+	twWeb  *scrapper.Client
 }
 
 func (p *processor) Fetch(limit int) ([]events.Event, error) {
