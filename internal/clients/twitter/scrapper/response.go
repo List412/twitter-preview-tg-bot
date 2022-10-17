@@ -262,9 +262,10 @@ type TweetHuge struct {
 										EditsRemaining     string   `json:"edits_remaining"`
 									} `json:"edit_control"`
 									Legacy struct {
-										CreatedAt         string `json:"created_at"`
-										ConversationIdStr string `json:"conversation_id_str"`
-										DisplayTextRange  []int  `json:"display_text_range"`
+										CollabControl     *CollabControl `json:"collab_control"`
+										CreatedAt         string         `json:"created_at"`
+										ConversationIdStr string         `json:"conversation_id_str"`
+										DisplayTextRange  []int          `json:"display_text_range"`
 										Entities          struct {
 											UserMentions []interface{} `json:"user_mentions"`
 											Urls         []interface{} `json:"urls"`
@@ -408,9 +409,10 @@ type TweetHuge struct {
 												EditsRemaining     string   `json:"edits_remaining"`
 											} `json:"edit_control"`
 											Legacy struct {
-												CreatedAt         string `json:"created_at"`
-												ConversationIdStr string `json:"conversation_id_str"`
-												DisplayTextRange  []int  `json:"display_text_range"`
+												CollabControl     *CollabControl `json:"collab_control"`
+												CreatedAt         string         `json:"created_at"`
+												ConversationIdStr string         `json:"conversation_id_str"`
+												DisplayTextRange  []int          `json:"display_text_range"`
 												Entities          struct {
 													UserMentions []struct {
 														IdStr      string `json:"id_str"`
@@ -476,4 +478,96 @@ type TweetHuge struct {
 			} `json:"metadata"`
 		} `json:"threaded_conversation_with_injections"`
 	} `json:"data"`
+}
+
+type CollabControl struct {
+	CollaboratorsResults []struct {
+		Result struct {
+			Typename                   string `json:"__typename"`
+			Id                         string `json:"id"`
+			RestId                     string `json:"rest_id"`
+			AffiliatesHighlightedLabel struct {
+			} `json:"affiliates_highlighted_label"`
+			HasNftAvatar bool `json:"has_nft_avatar"`
+			Legacy       struct {
+				CreatedAt           string `json:"created_at"`
+				DefaultProfile      bool   `json:"default_profile"`
+				DefaultProfileImage bool   `json:"default_profile_image"`
+				Description         string `json:"description"`
+				Entities            struct {
+					Description struct {
+						Urls []struct {
+							DisplayUrl  string `json:"display_url"`
+							ExpandedUrl string `json:"expanded_url"`
+							Url         string `json:"url"`
+							Indices     []int  `json:"indices"`
+						} `json:"urls"`
+					} `json:"description"`
+					Url struct {
+						Urls []struct {
+							DisplayUrl  string `json:"display_url"`
+							ExpandedUrl string `json:"expanded_url"`
+							Url         string `json:"url"`
+							Indices     []int  `json:"indices"`
+						} `json:"urls"`
+					} `json:"url,omitempty"`
+				} `json:"entities"`
+				FastFollowersCount      int      `json:"fast_followers_count"`
+				FavouritesCount         int      `json:"favourites_count"`
+				FollowersCount          int      `json:"followers_count"`
+				FriendsCount            int      `json:"friends_count"`
+				HasCustomTimelines      bool     `json:"has_custom_timelines"`
+				IsTranslator            bool     `json:"is_translator"`
+				ListedCount             int      `json:"listed_count"`
+				Location                string   `json:"location"`
+				MediaCount              int      `json:"media_count"`
+				Name                    string   `json:"name"`
+				NormalFollowersCount    int      `json:"normal_followers_count"`
+				PinnedTweetIdsStr       []string `json:"pinned_tweet_ids_str"`
+				PossiblySensitive       bool     `json:"possibly_sensitive"`
+				ProfileBannerExtensions struct {
+					MediaColor struct {
+						R struct {
+							Ok struct {
+								Palette []struct {
+									Percentage float64 `json:"percentage"`
+									Rgb        struct {
+										Blue  int `json:"blue"`
+										Green int `json:"green"`
+										Red   int `json:"red"`
+									} `json:"rgb"`
+								} `json:"palette"`
+							} `json:"ok"`
+						} `json:"r"`
+					} `json:"mediaColor"`
+				} `json:"profile_banner_extensions"`
+				ProfileBannerUrl       string `json:"profile_banner_url"`
+				ProfileImageExtensions struct {
+					MediaColor struct {
+						R struct {
+							Ok struct {
+								Palette []struct {
+									Percentage float64 `json:"percentage"`
+									Rgb        struct {
+										Blue  int `json:"blue"`
+										Green int `json:"green"`
+										Red   int `json:"red"`
+									} `json:"rgb"`
+								} `json:"palette"`
+							} `json:"ok"`
+						} `json:"r"`
+					} `json:"mediaColor"`
+				} `json:"profile_image_extensions"`
+				ProfileImageUrlHttps    string        `json:"profile_image_url_https"`
+				ProfileInterstitialType string        `json:"profile_interstitial_type"`
+				Protected               bool          `json:"protected"`
+				ScreenName              string        `json:"screen_name"`
+				StatusesCount           int           `json:"statuses_count"`
+				TranslatorType          string        `json:"translator_type"`
+				Verified                bool          `json:"verified"`
+				WithheldInCountries     []interface{} `json:"withheld_in_countries"`
+				Url                     string        `json:"url,omitempty"`
+			} `json:"legacy"`
+		} `json:"result"`
+	} `json:"collaborators_results"`
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/pkg/errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -30,11 +31,13 @@ type Client struct {
 	client http.Client
 }
 
-func (c *Client) GetTweetSelfReplays(id string) ([]SelfReplay, error) {
+func (c *Client) GetTweetSelfReplays(id string) (*PageScrapperResult, error) {
 	page, err := c.GetTweetPage(id)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("Scrapp tweet done %s", id)
 
 	var tweet TweetHuge
 	err = json.Unmarshal(page, &tweet)
@@ -56,10 +59,16 @@ func (c *Client) GetTweetSelfReplays(id string) ([]SelfReplay, error) {
 
 	selfReplays := selfReplayEntry.Content.Items
 
+	var scrapperReslt PageScrapperResult
+
 	var result []SelfReplay
 
 	for _, e := range selfReplays {
 		legacy := e.Item.ItemContent.TweetResults.Result.Legacy
+
+		if legacy.SelfThread.IdStr == "" {
+			continue
+		}
 
 		if legacy.SelfThread.IdStr == legacy.IdStr {
 			continue
@@ -72,7 +81,23 @@ func (c *Client) GetTweetSelfReplays(id string) ([]SelfReplay, error) {
 		result = append(result, reply)
 	}
 
-	return result, nil
+	var collabs []Collab
+
+	if entries[0].Content.ItemContent.TweetResults.Result.Legacy.CollabControl != nil &&
+		len(entries[0].Content.ItemContent.TweetResults.Result.Legacy.CollabControl.CollaboratorsResults) > 1 {
+		for _, c := range entries[0].Content.ItemContent.TweetResults.Result.Legacy.CollabControl.CollaboratorsResults {
+			collab := Collab{
+				Name:       c.Result.Legacy.Name,
+				ScreenName: c.Result.Legacy.ScreenName,
+			}
+			collabs = append(collabs, collab)
+		}
+	}
+
+	scrapperReslt.SelfReplay = result
+	scrapperReslt.CollabUsers = collabs
+
+	return &scrapperReslt, nil
 }
 
 func (c *Client) GetTweetPage(id string) ([]byte, error) {
@@ -102,6 +127,7 @@ func (c *Client) GetTweetPage(id string) ([]byte, error) {
 	req.Header.Add("Authorization", guestAuthToken)
 	req.Header.Add("x-guest-token", c.token)
 
+	log.Printf("%s %s %s\n", req.RemoteAddr, req.Method, req.URL)
 	response, err := c.client.Do(req)
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/url"
 	"strings"
+	"sync"
 	"tweets-tg-bot/internal/clients/twitter/scrapper"
 	twimg_cdn "tweets-tg-bot/internal/clients/twitter/twimg-cdn"
 )
@@ -39,10 +40,14 @@ func (p *processor) doCmd(text string, chatId int, username string) error {
 	}
 }
 
-func generateText(tweet *twimg_cdn.Tweet, selfReplays []scrapper.SelfReplay) string {
+func generateText(tweet *twimg_cdn.Tweet, selfReplays []scrapper.SelfReplay, collabs []scrapper.Collab) string {
 	result := ""
 
-	result += fmt.Sprintf("%s (@%s) tweeted:\n", tweet.User.Name, tweet.User.ScreenName)
+	if len(collabs) > 0 {
+		result += fmt.Sprintf("%s(%s) and %s(%s) tweeted: \n", collabs[0].Name, collabs[0].ScreenName, collabs[1].Name, collabs[1].ScreenName)
+	} else {
+		result += fmt.Sprintf("%s (@%s) tweeted:\n", tweet.User.Name, tweet.User.ScreenName)
+	}
 
 	result += fmt.Sprintf("%s \n", tweet.Text)
 
@@ -67,17 +72,43 @@ func generateText(tweet *twimg_cdn.Tweet, selfReplays []scrapper.SelfReplay) str
 
 func (p *processor) sendTweet(chatId int, id string, username string) error {
 
-	tweet, err := p.tw.GetTweet(id)
-	if err != nil {
-		return err
+	wg := sync.WaitGroup{}
+
+	sources := 2
+
+	wg.Add(sources)
+
+	var tweet *twimg_cdn.Tweet
+	var selfReplays []scrapper.SelfReplay
+	var collabs []scrapper.Collab
+
+	errChan := make(chan error, sources)
+
+	go func(wg *sync.WaitGroup, id string) {
+		defer wg.Done()
+		tweetLocal, err := p.tw.GetTweet(id)
+		errChan <- err
+		tweet = tweetLocal
+	}(&wg, id)
+
+	go func(wg *sync.WaitGroup, id string) {
+		defer wg.Done()
+		scrapperResult, err := p.twWeb.GetTweetSelfReplays(id)
+		_ = err // ignore this error for now
+		selfReplays = scrapperResult.SelfReplay
+		collabs = scrapperResult.CollabUsers
+	}(&wg, id)
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
 	}
 
-	selfReplays, err := p.twWeb.GetTweetSelfReplays(id)
-	if err != nil {
-		selfReplays = nil
-	}
-
-	message := generateText(tweet, selfReplays)
+	message := generateText(tweet, selfReplays, collabs)
 
 	if len(tweet.Photos) == 1 {
 		return p.tg.SendPhoto(chatId, message, photos(tweet)[0])

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/pkg/errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -36,6 +37,8 @@ func (c *Client) GetTweet(id string) (*Tweet, error) {
 		return nil, err
 	}
 
+	log.Printf("GetTweet done %s", id)
+
 	var tweet Tweet
 	if err := json.Unmarshal(response, &tweet); err != nil {
 		return nil, err
@@ -58,6 +61,7 @@ func (c *Client) doRequest(method string, query url.Values) ([]byte, error) {
 
 	req.URL.RawQuery = query.Encode()
 
+	log.Printf("%s %s %s\n", req.RemoteAddr, req.Method, req.URL)
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while making request: %s", method)
