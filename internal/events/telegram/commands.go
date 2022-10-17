@@ -94,7 +94,9 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 	go func(wg *sync.WaitGroup, id string) {
 		defer wg.Done()
 		scrapperResult, err := p.twWeb.GetTweetSelfReplays(id)
-		_ = err // ignore this error for now
+		if err != nil {
+			return
+		}
 		selfReplays = scrapperResult.SelfReplay
 		collabs = scrapperResult.CollabUsers
 	}(&wg, id)
