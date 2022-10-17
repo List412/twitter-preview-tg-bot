@@ -44,7 +44,7 @@ func generateText(tweet *twimg_cdn.Tweet, selfReplays []scrapper.SelfReplay, col
 	result := ""
 
 	if len(collabs) > 0 {
-		result += fmt.Sprintf("%s(%s) and %s(%s) tweeted: \n", collabs[0].Name, collabs[0].ScreenName, collabs[1].Name, collabs[1].ScreenName)
+		result += fmt.Sprintf("%s(@%s) and %s(@%s) tweeted: \n", collabs[0].Name, collabs[0].ScreenName, collabs[1].Name, collabs[1].ScreenName)
 	} else {
 		result += fmt.Sprintf("%s (@%s) tweeted:\n", tweet.User.Name, tweet.User.ScreenName)
 	}
