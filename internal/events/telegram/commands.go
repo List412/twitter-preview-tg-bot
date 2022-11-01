@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"tweets-tg-bot/internal/clients/telegram"
 	"tweets-tg-bot/internal/clients/twitter/scrapper"
 	twimg_cdn "tweets-tg-bot/internal/clients/twitter/twimg-cdn"
 )
@@ -81,6 +82,7 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 	var tweet *twimg_cdn.Tweet
 	var selfReplays []scrapper.SelfReplay
 	var collabs []scrapper.Collab
+	var button *telegram.Button
 
 	errChan := make(chan error, sources)
 
@@ -110,10 +112,21 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 		}
 	}
 
+	if len(selfReplays) > 0 {
+		button = &telegram.Button{
+			Text:         "test|tweetID",
+			CallbackData: id,
+		}
+	}
+
 	message := generateText(tweet, selfReplays, collabs)
 
+	if tweet.QuotedTweet != nil && len(tweet.QuotedTweet.Photos) > 0 {
+		tweet.Photos = append(tweet.Photos, tweet.QuotedTweet.Photos...)
+	}
+
 	if len(tweet.Photos) == 1 {
-		return p.tg.SendPhoto(chatId, message, photos(tweet)[0])
+		return p.tg.SendPhoto(chatId, message, photos(tweet)[0], button)
 	}
 
 	if len(tweet.Photos) >= 2 {

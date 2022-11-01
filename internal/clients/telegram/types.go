@@ -29,3 +29,12 @@ type Photo struct {
 	Media   string `json:"media"`
 	Caption string `json:"caption,omitempty"`
 }
+
+type Button struct {
+	Text         string `json:"text"`
+	CallbackData string `json:"callback_data"`
+}
+
+type InlineKeyboardMarkup struct {
+	InlineKeyboard [][]Button `json:"inline_keyboard"`
+}

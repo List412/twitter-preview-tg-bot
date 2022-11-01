@@ -3,18 +3,19 @@ package twimg_cdn
 import "time"
 
 type Tweet struct {
-	Lang              string    `json:"lang"`
-	FavoriteCount     int       `json:"favorite_count"` // likes
-	CreatedAt         time.Time `json:"created_at"`
-	Entities          Entities  `json:"entities"`
-	IdStr             string    `json:"id_str"`
-	Text              string    `json:"text"`
-	User              User      `json:"user"`
-	Photos            []Photos  `json:"photos"`
-	Video             *Video    `json:"video"`
-	ConversationCount int       `json:"conversation_count"`
-	NewsActionType    string    `json:"news_action_type"`
-	Parent            *Parent   `json:"parent"`
+	Lang              string       `json:"lang"`
+	FavoriteCount     int          `json:"favorite_count"` // likes
+	CreatedAt         time.Time    `json:"created_at"`
+	Entities          Entities     `json:"entities"`
+	IdStr             string       `json:"id_str"`
+	Text              string       `json:"text"`
+	User              User         `json:"user"`
+	Photos            []Photos     `json:"photos"`
+	Video             *Video       `json:"video"`
+	ConversationCount int          `json:"conversation_count"`
+	NewsActionType    string       `json:"news_action_type"`
+	Parent            *Parent      `json:"parent"`
+	QuotedTweet       *QuotedTweet `json:"quoted_tweet"`
 }
 
 type User struct {
@@ -77,4 +78,17 @@ type Variants struct {
 type VideoId struct {
 	Type string `json:"type"`
 	Id   string `json:"id"`
+}
+type QuotedTweet struct {
+	Lang              string    `json:"lang"`
+	ReplyCount        int       `json:"reply_count"`
+	RetweetCount      int       `json:"retweet_count"`
+	FavoriteCount     int       `json:"favorite_count"`
+	PossiblySensitive bool      `json:"possibly_sensitive"`
+	CreatedAt         time.Time `json:"created_at"`
+	DisplayTextRange  []int     `json:"display_text_range"`
+	IdStr             string    `json:"id_str"`
+	Text              string    `json:"text"`
+	User              User      `json:"user"`
+	Photos            []Photos  `json:"photos"`
 }

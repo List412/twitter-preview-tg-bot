@@ -77,11 +77,21 @@ func (c *Client) SendPhotos(chatId int, text string, photos []string) error {
 	return nil
 }
 
-func (c *Client) SendPhoto(chatId int, text string, photo string) error {
+func (c *Client) SendPhoto(chatId int, text string, photo string, button *Button) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("photo", photo)
 	q.Add("caption", text)
+
+	// todo?
+	//if button != nil {
+	//	buttons := make([][]Button, 1)
+	//	buttons[0] = []Button{*button}
+	//	data, err := json.Marshal(InlineKeyboardMarkup{buttons})
+	//	if err == nil {
+	//		q.Add("reply_markup", string(data))
+	//	}
+	//}
 
 	_, err := c.doRequest(sendPhoto, q)
 	if err != nil {
