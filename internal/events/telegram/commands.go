@@ -2,15 +2,13 @@ package telegram
 
 import (
 	"fmt"
+	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/pkg/errors"
 	"log"
 	"math/rand"
 	"net/url"
 	"strings"
-	"sync"
-	"tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/clients/twitter/scrapper"
-	twimg_cdn "tweets-tg-bot/internal/clients/twitter/twimg-cdn"
+	"time"
 )
 
 const (
@@ -22,10 +20,9 @@ const (
 func (p *processor) doCmd(text string, chatId int, username string) error {
 	text = strings.TrimSpace(text)
 
-	log.Printf("got new command: %s from: %s", text, username)
-
 	id, err := parseTweeterUrl(text)
 	if err == nil {
+		log.Printf("got new command: %s from: %s", text, username)
 		return p.sendTweet(chatId, id, username)
 	}
 
@@ -41,99 +38,69 @@ func (p *processor) doCmd(text string, chatId int, username string) error {
 	}
 }
 
-func generateText(tweet *twimg_cdn.Tweet, selfReplays []scrapper.SelfReplay, collabs []scrapper.Collab) string {
+func generateText(tweet *twitterscraper.Tweet) string {
 	result := ""
 
-	if len(collabs) > 0 {
-		result += fmt.Sprintf("%s(@%s) and %s(@%s) tweeted: \n", collabs[0].Name, collabs[0].ScreenName, collabs[1].Name, collabs[1].ScreenName)
-	} else {
-		result += fmt.Sprintf("%s (@%s) tweeted:\n", tweet.User.Name, tweet.User.ScreenName)
-	}
+	result += fmt.Sprintf("%s tweeted:\n", tweet.Username)
 
 	result += fmt.Sprintf("%s \n", tweet.Text)
 
-	if tweet.Parent != nil {
-		parent := tweet.Parent
-		result += fmt.Sprintf("\n———\n")
-		result += fmt.Sprintf("in replay to: %s (@%s):\n", parent.User.Name, parent.User.ScreenName)
-		result += fmt.Sprintf("%s\n\n", parent.Text)
+	if tweet.InReplyToStatus != nil {
+		result += addInReplayTo(tweet.InReplyToStatus)
 	}
 
-	if len(selfReplays) > 0 {
-		for _, r := range selfReplays {
-			result += fmt.Sprintf("%s\n", r.Text)
-		}
-		result += fmt.Sprintf("\n")
+	if tweet.QuotedStatus != nil {
+		result += addInReplayTo(tweet.QuotedStatus)
 	}
 
-	result += fmt.Sprintf("%s | лайков %d", tweet.CreatedAt, tweet.FavoriteCount)
+	if tweet.RetweetedStatus != nil {
+		result += addInReplayTo(tweet.RetweetedStatus)
+	}
+
+	twTime := time.Unix(tweet.Timestamp, 0).Format("15:04 2 Jan 2006")
+
+	result += fmt.Sprintf("%s | 💙%d", twTime, tweet.Likes)
 
 	return result
 }
 
+func addInReplayTo(tweet *twitterscraper.Tweet) string {
+	result := fmt.Sprintf("\n———\n")
+	result += fmt.Sprintf("in replay to: %s:\n", tweet.Username)
+	result += fmt.Sprintf("%s\n\n", tweet.Text)
+	return result
+}
+
+func photoFromQuoted(tweets ...*twitterscraper.Tweet) []string {
+	var photos []string
+	for _, tweet := range tweets {
+		if tweet != nil && len(tweet.Photos) > 0 {
+			photos = append(photos, tweet.Photos...)
+		}
+	}
+	return photos
+}
+
 func (p *processor) sendTweet(chatId int, id string, username string) error {
 
-	wg := sync.WaitGroup{}
-
-	sources := 2
-
-	wg.Add(sources)
-
-	var tweet *twimg_cdn.Tweet
-	var selfReplays []scrapper.SelfReplay
-	var collabs []scrapper.Collab
-	var button *telegram.Button
-
-	errChan := make(chan error, sources)
-
-	go func(wg *sync.WaitGroup, id string) {
-		defer wg.Done()
-		tweetLocal, err := p.tw.GetTweet(id)
-		errChan <- err
-		tweet = tweetLocal
-	}(&wg, id)
-
-	go func(wg *sync.WaitGroup, id string) {
-		defer wg.Done()
-		scrapperResult, err := p.twWeb.GetTweetSelfReplays(id)
-		if err != nil {
-			return
-		}
-		selfReplays = scrapperResult.SelfReplay
-		collabs = scrapperResult.CollabUsers
-	}(&wg, id)
-
-	wg.Wait()
-	close(errChan)
-
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
+	tweet, err := p.tw.GetTweet(id)
+	if err != nil {
+		return err
 	}
 
-	if len(selfReplays) > 0 {
-		button = &telegram.Button{
-			Text:         "test|tweetID",
-			CallbackData: id,
-		}
-	}
+	message := generateText(tweet)
 
-	message := generateText(tweet, selfReplays, collabs)
-
-	if tweet.QuotedTweet != nil && len(tweet.QuotedTweet.Photos) > 0 {
-		tweet.Photos = append(tweet.Photos, tweet.QuotedTweet.Photos...)
-	}
+	tweet.Photos = append(tweet.Photos, photoFromQuoted(tweet.QuotedStatus, tweet.RetweetedStatus, tweet.InReplyToStatus)...)
 
 	if len(tweet.Photos) == 1 {
-		return p.tg.SendPhoto(chatId, message, photos(tweet)[0], button)
+		return p.tg.SendPhoto(chatId, message, photos(tweet)[0])
 	}
 
 	if len(tweet.Photos) >= 2 {
 		return p.tg.SendPhotos(chatId, message, photos(tweet))
 	}
 
-	if tweet.Video != nil {
+	if len(tweet.Videos) > 0 {
 		return p.tg.SendVideo(chatId, message, video(tweet))
 	}
 
@@ -175,20 +142,13 @@ func parseTweeterUrl(text string) (string, error) {
 	return path[2], nil
 }
 
-func photos(tweet *twimg_cdn.Tweet) []string {
-	photos := make([]string, len(tweet.Photos))
-
-	for i, p := range tweet.Photos {
-		photos[i] = p.Url
-	}
-	return photos
+func photos(tweet *twitterscraper.Tweet) []string {
+	return tweet.Photos
 }
 
-func video(tweet *twimg_cdn.Tweet) string {
-	for _, v := range tweet.Video.Variants {
-		if v.Type == "video/mp4" {
-			return v.Src
-		}
+func video(tweet *twitterscraper.Tweet) string {
+	if len(tweet.Videos) > 0 {
+		return tweet.Videos[0].URL
 	}
 	return ""
 }

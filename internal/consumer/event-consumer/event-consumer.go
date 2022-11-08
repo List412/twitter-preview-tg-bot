@@ -53,8 +53,6 @@ func (c *consumer) handleEvents(eventsBatch []events.Event) error {
 	wg.Add(len(eventsBatch))
 
 	for _, event := range eventsBatch {
-		log.Printf("got new event %s", event.Text)
-
 		go func(event events.Event) {
 			defer wg.Done()
 			if err := c.processor.Process(event); err != nil {
