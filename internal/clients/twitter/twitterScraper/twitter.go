@@ -2,6 +2,8 @@ package twitterScraper
 
 import (
 	twitterscraper "github.com/n0madic/twitter-scraper"
+	"log"
+	"sync"
 )
 
 type Scraper struct {
@@ -15,7 +17,47 @@ func NewScrapper() *Scraper {
 	return &Scraper{tw: scraper}
 }
 
-func (s Scraper) GetTweet(id string) (*twitterscraper.Tweet, error) {
+func (s Scraper) GetTweet(id string) (*TweetResult, error) {
 
-	return s.tw.GetTweet(id)
+	wg := sync.WaitGroup{}
+	n := 2
+
+	var replays *PageScrapperResult
+	var tweet *twitterscraper.Tweet
+
+	errChan := make(chan error, n)
+
+	wg.Add(n)
+
+	go func() {
+		defer wg.Done()
+		r, err := s.GetTweetSelfReplays(id)
+		_ = err
+		replays = r
+	}()
+
+	go func() {
+		defer wg.Done()
+		defer log.Printf("Scrapp tweet api done %s", id)
+		tw, err := s.tw.GetTweet(id)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		tweet = tw
+	}()
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &TweetResult{
+		Tweet:      tweet,
+		SelfReplay: replays.SelfReplay,
+	}, nil
 }

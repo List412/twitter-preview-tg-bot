@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
 )
 
 const (
@@ -38,7 +39,7 @@ func (p *processor) doCmd(text string, chatId int, username string) error {
 	}
 }
 
-func generateText(tweet *twitterscraper.Tweet) string {
+func generateText(tweet *twitterscraper.Tweet, replays []twitterScraper.SelfReplay) string {
 	result := ""
 
 	result += fmt.Sprintf("%s tweeted:\n", tweet.Username)
@@ -57,9 +58,16 @@ func generateText(tweet *twitterscraper.Tweet) string {
 		result += addInReplayTo(tweet.RetweetedStatus)
 	}
 
+	if len(replays) > 0 {
+		for _, r := range replays {
+			result += fmt.Sprintf("%s\n", r.Text)
+		}
+		result += fmt.Sprintf("\n")
+	}
+
 	twTime := time.Unix(tweet.Timestamp, 0).Format("15:04 2 Jan 2006")
 
-	result += fmt.Sprintf("%s | 💙%d", twTime, tweet.Likes)
+	result += fmt.Sprintf("%s | 💙%d| replies %d| retweets %d", twTime, tweet.Likes, tweet.Replies, tweet.Retweets)
 
 	return result
 }
@@ -81,34 +89,89 @@ func photoFromQuoted(tweets ...*twitterscraper.Tweet) []string {
 	return photos
 }
 
-func (p *processor) sendTweet(chatId int, id string, username string) error {
+func timeTrack(start time.Time, name string) {
+	elapsed := time.Since(start)
+	log.Printf("%s took %s", name, elapsed)
+}
 
-	tweet, err := p.tw.GetTweet(id)
+func (p *processor) sendTweet(chatId int, id string, username string) error {
+	defer timeTrack(time.Now(), "sendTweet")
+
+	tweetResult, err := p.tw.GetTweet(id)
 	if err != nil {
 		return err
 	}
 
-	message := generateText(tweet)
+	tweet := tweetResult.Tweet
+
+	message := generateText(tweet, tweetResult.SelfReplay)
 
 	tweet.Photos = append(tweet.Photos, photoFromQuoted(tweet.QuotedStatus, tweet.RetweetedStatus, tweet.InReplyToStatus)...)
 
-	if len(tweet.Photos) == 1 {
-		return p.tg.SendPhoto(chatId, message, photos(tweet)[0])
-	}
-
-	if len(tweet.Photos) >= 2 {
-		return p.tg.SendPhotos(chatId, message, photos(tweet))
-	}
-
-	if len(tweet.Videos) > 0 {
-		return p.tg.SendVideo(chatId, message, video(tweet))
-	}
-
-	if err := p.tg.SendMessage(chatId, message); err != nil {
+	messages, err := chunkString(message, 1024)
+	if err != nil {
 		return err
 	}
 
+	for _, m := range messages {
+		if len(tweet.Photos) == 1 {
+			err = p.tg.SendPhoto(chatId, m, photos(tweet)[0])
+			if err != nil {
+				return err
+			}
+			tweet.Photos = nil
+			continue
+		}
+
+		if len(tweet.Photos) >= 2 {
+			err = p.tg.SendPhotos(chatId, m, photos(tweet))
+			if err != nil {
+				return err
+			}
+			tweet.Photos = nil
+			continue
+		}
+
+		if len(tweet.Videos) > 0 {
+			err = p.tg.SendVideo(chatId, m, video(tweet))
+			if err != nil {
+				return err
+			}
+			tweet.Videos = nil
+			continue
+		}
+
+		if err := p.tg.SendMessage(chatId, m); err != nil {
+			return err
+		}
+		continue
+	}
+
 	return nil
+}
+
+func chunkString(s string, chunkSize int) ([]string, error) {
+	//regex, err := regexp.Compile(".{1,25}\\b|.{1,25}")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//chunks := regex.FindAllString(s, -1)
+	var chunks []string
+	runes := []rune(s)
+
+	if len(runes) == 0 {
+		return []string{s}, nil
+	}
+
+	for i := 0; i < len(runes); i += chunkSize {
+		nn := i + chunkSize
+		if nn > len(runes) {
+			nn = len(runes)
+		}
+		chunks = append(chunks, string(runes[i:nn]))
+	}
+	return chunks, nil
 }
 
 func (p *processor) sendRandom(chatId int, username string) error {
