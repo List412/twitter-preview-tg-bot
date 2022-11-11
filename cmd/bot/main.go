@@ -16,10 +16,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	scrapper := twitterScraper.NewScrapper()
+
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
-		twitterScraper.NewScrapper(),
+		scrapper,
 	)
+
+	go scrapper.UpdateTokenJob()
 
 	consumer := event_consumer.NewConsumer(eventProcessor, eventProcessor, cfg.Consumer.BatchSize)
 

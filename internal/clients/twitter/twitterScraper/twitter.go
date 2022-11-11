@@ -4,6 +4,7 @@ import (
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"log"
 	"sync"
+	"time"
 )
 
 type Scraper struct {
@@ -60,4 +61,18 @@ func (s Scraper) GetTweet(id string) (*TweetResult, error) {
 		Tweet:      tweet,
 		SelfReplay: replays.SelfReplay,
 	}, nil
+}
+
+func (s Scraper) UpdateTokenJob() {
+	ticker := time.NewTicker(30 * time.Minute)
+	_ = s.tw.GetGuestToken()
+	select {
+	case <-ticker.C:
+		err := s.tw.GetGuestToken()
+		if err != nil {
+			println("error while retrieving guest token")
+		} else {
+			println("guest token updated")
+		}
+	}
 }
