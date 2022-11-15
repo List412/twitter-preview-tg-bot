@@ -42,6 +42,10 @@ func (s Scraper) GetTweet(id string) (*TweetResult, error) {
 		defer log.Printf("Scrapp tweet api done %s", id)
 		tw, err := s.tw.GetTweet(id)
 		if err != nil {
+			_ = s.tw.GetGuestToken()
+			tw, err = s.tw.GetTweet(id)
+		}
+		if err != nil {
 			errChan <- err
 			return
 		}
