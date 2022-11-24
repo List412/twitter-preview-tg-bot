@@ -1,6 +1,7 @@
 package event_consumer
 
 import (
+	"context"
 	"log"
 	"sync"
 	"time"
@@ -21,23 +22,29 @@ type consumer struct {
 	batchSize int
 }
 
-func (c *consumer) Start() error {
+func (c *consumer) Start(ctx context.Context) error {
 
 	for {
-		gotEvents, err := c.fetcher.Fetch(c.batchSize)
-		if err != nil {
-			log.Printf("[ERR] consumer: %s", err.Error())
-			continue
-		}
+		select {
+		case <-ctx.Done():
+			c.processor.Close()
+			return nil
+		default:
+			gotEvents, err := c.fetcher.Fetch(c.batchSize)
+			if err != nil {
+				log.Printf("[ERR] consumer: %s", err.Error())
+				continue
+			}
 
-		if len(gotEvents) == 0 {
-			time.Sleep(1 * time.Second)
-			continue
-		}
+			if len(gotEvents) == 0 {
+				time.Sleep(1 * time.Second)
+				continue
+			}
 
-		if err := c.handleEvents(gotEvents); err != nil {
-			log.Printf("can't handle events %s", err.Error())
-			continue
+			if err := c.handleEvents(gotEvents); err != nil {
+				log.Printf("can't handle events %s", err.Error())
+				continue
+			}
 		}
 	}
 }

@@ -61,9 +61,15 @@ func (s Scraper) GetTweet(id string) (*TweetResult, error) {
 		}
 	}
 
+	var selfReplays []SelfReplay
+
+	if replays != nil && replays.SelfReplay != nil {
+		selfReplays = replays.SelfReplay
+	}
+
 	return &TweetResult{
 		Tweet:      tweet,
-		SelfReplay: replays.SelfReplay,
+		SelfReplay: selfReplays,
 	}, nil
 }
 

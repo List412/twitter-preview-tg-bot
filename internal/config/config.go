@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
 )
@@ -26,6 +27,8 @@ type Config struct {
 	Tweeter  Tweeter
 	Storage  Storage
 	Consumer Consumer
+	Db       Db
+	Admin    Admin
 }
 
 type Telegram struct {
@@ -44,4 +47,23 @@ type Storage struct {
 
 type Consumer struct {
 	BatchSize int `env:"CONSUMER_BATCH_SIZE"`
+}
+
+type Db struct {
+	User string `env:"DB_USER"`
+	Pass string `env:"DB_PASS"`
+	Host string `env:"DB_HOST"`
+	Port string `env:"DB_PORT"`
+	Name string `env:"DB_NAME"`
+}
+
+func (d Db) Dsn() string {
+	//dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	//	c.user, c.pass, c.host, c.port, c.name)
+	dsn := fmt.Sprintf("mongodb://%s:%s@%s:%s", d.User, d.Pass, d.Host, d.Port)
+	return dsn
+}
+
+type Admin struct {
+	Id int `env:"ADMIN_ID"`
 }

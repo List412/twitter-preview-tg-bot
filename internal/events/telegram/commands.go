@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"fmt"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/pkg/errors"
@@ -16,13 +17,15 @@ const (
 	RndCmd   = "/rnd"
 	HelpCmd  = "/help"
 	StartCmd = "/start"
+	StatsCmd = "/stats"
 )
 
-func (p *processor) doCmd(text string, chatId int, username string) error {
+func (p *processor) doCmd(text string, chatId int, username string, userId int) error {
 	text = strings.TrimSpace(text)
 
 	id, err := parseTweeterUrl(text)
 	if err == nil {
+		p.usersShareTweet <- username
 		log.Printf("got new command: %s from: %s", text, username)
 		return p.sendTweet(chatId, id, username)
 	}
@@ -34,6 +37,8 @@ func (p *processor) doCmd(text string, chatId int, username string) error {
 		return p.sendHelp(chatId, username)
 	case RndCmd:
 		return p.sendRandom(chatId, username)
+	case StatsCmd:
+		return p.sendStats(chatId, userId)
 	default:
 		return nil
 	}
@@ -114,6 +119,15 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 	}
 
 	for _, m := range messages {
+		if len(tweet.Videos) > 0 {
+			err = p.tg.SendVideo(chatId, m, video(tweet))
+			if err != nil {
+				return err
+			}
+			tweet.Videos = nil
+			continue
+		}
+
 		if len(tweet.Photos) == 1 {
 			err = p.tg.SendPhoto(chatId, m, photos(tweet)[0])
 			if err != nil {
@@ -129,15 +143,6 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 				return err
 			}
 			tweet.Photos = nil
-			continue
-		}
-
-		if len(tweet.Videos) > 0 {
-			err = p.tg.SendVideo(chatId, m, video(tweet))
-			if err != nil {
-				return err
-			}
-			tweet.Videos = nil
 			continue
 		}
 
@@ -177,6 +182,33 @@ func chunkString(s string, chunkSize int) ([]string, error) {
 func (p *processor) sendRandom(chatId int, username string) error {
 	n := rand.Intn(100)
 	if err := p.tg.SendMessage(chatId, fmt.Sprintf("random %d", n)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *processor) sendStats(id int, userId int) error {
+	isAdmin, err := p.users.IsAdmin(userId)
+	if err != nil {
+		return err
+	}
+	if !isAdmin {
+		return nil
+	}
+
+	ctx := context.TODO()
+	count, err := p.users.Count(ctx)
+	if err != nil {
+		return err
+	}
+
+	countShares, err := p.users.CountShare(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := p.tg.SendMessage(id, fmt.Sprintf("Users: %d \nUsers who share tweets: %d", count, countShares)); err != nil {
 		return err
 	}
 
