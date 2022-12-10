@@ -2,6 +2,10 @@ package service
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus"
+	io_prometheus_client "github.com/prometheus/client_model/go"
+	"log"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
 )
 
@@ -14,14 +18,38 @@ type Repository interface {
 	Count(ctx context.Context) (int64, error)
 }
 
-func New(repository Repository, shareRepo Repository, cfg config.Admin) *service {
-	return &service{users: repository, usersShare: shareRepo, cfg: cfg}
+type MetricHandler interface {
+	HandleCmd(ctx context.Context, cmd commands.Cmd)
+	GetCmdStats(ctx context.Context, command string) (prometheus.Counter, error)
+}
+
+func New(repository Repository, shareRepo Repository, metrics MetricHandler, cfg config.Admin) *service {
+	return &service{users: repository, usersShare: shareRepo, metrics: metrics, cfg: cfg}
 }
 
 type service struct {
 	users      Repository
 	usersShare Repository
+	metrics    MetricHandler
 	cfg        config.Admin
+}
+
+func (s service) Command(cmd commands.Cmd, userName string) {
+	ctx := context.TODO()
+	switch cmd {
+	case commands.TweetCmd:
+		err := s.AddShare(ctx, userName)
+		if err != nil {
+			log.Printf("AddShare error: %s", err.Error())
+		}
+	default:
+		err := s.Add(ctx, userName)
+		if err != nil {
+			log.Printf("Add error: %s", err.Error())
+		}
+	}
+
+	s.metrics.HandleCmd(ctx, cmd)
 }
 
 func (s service) IsExist(ctx context.Context, userName string) bool {
@@ -71,4 +99,22 @@ func (s service) CountShare(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return int(count), nil
+}
+
+func (s service) CommandsStat(ctx context.Context) (map[string]int, error) {
+	commandsToSend := []string{string(commands.TweetCmd), string(commands.HelpCmd), string(commands.StartCmd)}
+	result := make(map[string]int, len(commandsToSend))
+	for _, c := range commandsToSend {
+		counter, err := s.metrics.GetCmdStats(ctx, c)
+		if err != nil {
+			continue
+		}
+		store := io_prometheus_client.Metric{}
+		err = counter.Write(&store)
+		if err != nil {
+			continue
+		}
+		result[c] = int(store.Counter.GetValue())
+	}
+	return result, nil
 }

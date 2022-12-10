@@ -23,12 +23,17 @@ func NewConfig() (*Config, error) {
 }
 
 type Config struct {
-	Telegram Telegram
-	Tweeter  Tweeter
-	Storage  Storage
-	Consumer Consumer
-	Db       Db
-	Admin    Admin
+	Telegram   Telegram
+	Tweeter    Tweeter
+	Storage    Storage
+	Consumer   Consumer
+	Db         Db
+	Admin      Admin
+	Prometheus Prometheus
+}
+
+type Prometheus struct {
+	Port int `env:"PROM_PORT"`
 }
 
 type Telegram struct {

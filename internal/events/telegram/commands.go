@@ -11,33 +11,45 @@ import (
 	"strings"
 	"time"
 	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
+	"tweets-tg-bot/internal/commands"
 )
 
-const (
-	RndCmd   = "/rnd"
-	HelpCmd  = "/help"
-	StartCmd = "/start"
-	StatsCmd = "/stats"
-)
+var AllCommands = []commands.Cmd{
+	commands.RndCmd, commands.HelpCmd, commands.StartCmd, commands.StatsCmd,
+}
+
+var ErrorUnknownCommand = errors.New("unknown command")
 
 func (p *processor) doCmd(text string, chatId int, username string, userId int) error {
 	text = strings.TrimSpace(text)
 
-	id, err := parseTweeterUrl(text)
-	if err == nil {
-		p.usersShareTweet <- username
-		log.Printf("got new command: %s from: %s", text, username)
-		return p.sendTweet(chatId, id, username)
+	cmd, err := parseCmd(text)
+	if errors.Is(err, ErrorUnknownCommand) {
+		return nil
+	}
+	if err != nil {
+		return err
 	}
 
-	switch text {
-	case StartCmd:
+	defer func() {
+		p.users.Command(cmd, username)
+	}()
+
+	switch cmd {
+	case commands.TweetCmd:
+		id, err := parseTweeterUrl(text)
+		if err != nil {
+			return nil
+		}
+		log.Printf("got new command: %s from: %s", text, username)
+		return p.sendTweet(chatId, id, username)
+	case commands.StartCmd:
 		return p.sendStart(chatId, username)
-	case HelpCmd:
+	case commands.HelpCmd:
 		return p.sendHelp(chatId, username)
-	case RndCmd:
+	case commands.RndCmd:
 		return p.sendRandom(chatId, username)
-	case StatsCmd:
+	case commands.StatsCmd:
 		return p.sendStats(chatId, userId)
 	default:
 		return nil
@@ -208,7 +220,18 @@ func (p *processor) sendStats(id int, userId int) error {
 		return err
 	}
 
-	if err := p.tg.SendMessage(id, fmt.Sprintf("Users: %d \nUsers who share tweets: %d", count, countShares)); err != nil {
+	comandsStat, err := p.users.CommandsStat(ctx)
+	if err != nil {
+		return err
+	}
+
+	message := fmt.Sprintf("Users: %d \nUsers who share tweets: %d \n", count, countShares)
+
+	for k, v := range comandsStat {
+		message += fmt.Sprintf("\n%s: %d", k, v)
+	}
+
+	if err := p.tg.SendMessage(id, message); err != nil {
 		return err
 	}
 
@@ -235,6 +258,26 @@ func parseTweeterUrl(text string) (string, error) {
 		return "", errors.New("id in url empty")
 	}
 	return path[2], nil
+}
+
+func parseCmd(text string) (commands.Cmd, error) {
+	if _, err := parseTweeterUrl(text); err == nil {
+		return commands.TweetCmd, nil
+	}
+
+	for _, cmd := range AllCommands {
+		if len(text) < len(cmd) {
+			continue
+		}
+
+		cmdPart := text[:len(cmd)]
+
+		if string(cmd) == cmdPart {
+			return cmd, nil
+		}
+	}
+
+	return "", ErrorUnknownCommand
 }
 
 func photos(tweet *twitterscraper.Tweet) []string {

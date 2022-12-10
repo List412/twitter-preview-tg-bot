@@ -7,6 +7,7 @@ import (
 	"sync"
 	"tweets-tg-bot/internal/clients/telegram"
 	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events"
 )
 
@@ -41,7 +42,7 @@ type processor struct { //todo rename lol
 	usersShareTweet chan string
 }
 
-func (p *processor) Fetch(limit int) ([]events.Event, error) {
+func (p *processor) Fetch(limit int) ([]commands.Event, error) {
 	updates, err := p.tg.Updates(p.offset, limit)
 
 	if err != nil {
@@ -52,7 +53,7 @@ func (p *processor) Fetch(limit int) ([]events.Event, error) {
 		return nil, nil
 	}
 
-	res := make([]events.Event, len(updates))
+	res := make([]commands.Event, len(updates))
 
 	for i, u := range updates {
 		res[i] = event(u)
@@ -63,11 +64,11 @@ func (p *processor) Fetch(limit int) ([]events.Event, error) {
 	return res, nil
 }
 
-func (p *processor) Process(event events.Event) error {
+func (p *processor) Process(event commands.Event) error {
 	switch event.Type {
-	case events.Message:
+	case commands.Message:
 		return p.processMessage(event)
-	case events.Unknown:
+	case commands.Unknown:
 		return ErrUnknownEventType
 	}
 	return nil
@@ -106,7 +107,7 @@ func (p *processor) Close() {
 	close(p.usersShareTweet)
 }
 
-func (p *processor) processMessage(e events.Event) error {
+func (p *processor) processMessage(e commands.Event) error {
 	meta, err := meta(e)
 	if err != nil {
 		return err
@@ -121,7 +122,7 @@ func (p *processor) processMessage(e events.Event) error {
 	return nil
 }
 
-func meta(e events.Event) (Meta, error) {
+func meta(e commands.Event) (Meta, error) {
 	res, ok := e.Meta.(Meta)
 	if !ok {
 		return Meta{}, ErrUnknownMeta
@@ -129,15 +130,15 @@ func meta(e events.Event) (Meta, error) {
 	return res, nil
 }
 
-func event(u telegram.Update) events.Event {
+func event(u telegram.Update) commands.Event {
 	messageType := fetchType(u)
 
-	res := events.Event{
+	res := commands.Event{
 		Type: messageType,
 		Text: fetchText(u),
 	}
 
-	if res.Type == events.Message {
+	if res.Type == commands.Message {
 		res.Meta = Meta{
 			ChatId:   u.Message.Chat.ID,
 			Username: u.Message.From.Username,
@@ -155,9 +156,9 @@ func fetchText(u telegram.Update) string {
 	return u.Message.Text
 }
 
-func fetchType(u telegram.Update) events.Type {
+func fetchType(u telegram.Update) commands.Type {
 	if u.Message == nil {
-		return events.Unknown
+		return commands.Unknown
 	}
-	return events.Message
+	return commands.Message
 }

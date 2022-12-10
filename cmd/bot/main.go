@@ -2,22 +2,29 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
 	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
 	"tweets-tg-bot/internal/config"
-	"tweets-tg-bot/internal/consumer/event-consumer"
 	"tweets-tg-bot/internal/dbConn"
+	"tweets-tg-bot/internal/events/consumer/event-consumer"
 	"tweets-tg-bot/internal/events/telegram"
-	repository2 "tweets-tg-bot/internal/share/repository"
-	"tweets-tg-bot/internal/users/repository"
-	"tweets-tg-bot/internal/users/service"
+	metrics2 "tweets-tg-bot/internal/metrics"
+	repository2 "tweets-tg-bot/internal/storage/share/repository"
+	"tweets-tg-bot/internal/storage/users/repository"
+	"tweets-tg-bot/internal/storage/users/service"
 )
 
 func main() {
@@ -39,6 +46,35 @@ func main() {
 
 	scrapper := twitterScraper.NewScrapper()
 
+	// Create a new registry.
+	reg := prometheus.NewRegistry()
+
+	// Add Go module build info.
+	reg.MustRegister(collectors.NewBuildInfoCollector())
+	reg.MustRegister(collectors.NewGoCollector(
+		collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{Matcher: regexp.MustCompile("/.*")}),
+	))
+	metricsHandler := metrics2.Metrics{}
+	metricsHandler.Register(reg)
+
+	// Expose the registered metrics via HTTP.
+	http.Handle("/metrics", promhttp.HandlerFor(
+		reg,
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars.
+			EnableOpenMetrics: true,
+		},
+	))
+
+	go func() {
+		addr := fmt.Sprintf(":%d", cfg.Prometheus.Port)
+		log.Printf("Starting web server at %s\n", addr)
+		err := http.ListenAndServe(addr, nil)
+		if err != nil {
+			log.Printf("http.ListenAndServer: %v\n", err)
+		}
+	}()
+
 	usersCollection := db.Database(cfg.Db.Name).Collection("users")
 	shareCollections := db.Database(cfg.Db.Name).Collection("share")
 
@@ -49,7 +85,7 @@ func main() {
 
 	usersRepo := repository.New(usersCollection)
 	shareRepo := repository2.New(shareCollections)
-	usersServ := service.New(usersRepo, shareRepo, cfg.Admin)
+	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
 
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),

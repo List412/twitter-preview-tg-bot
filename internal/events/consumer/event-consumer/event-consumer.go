@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events"
 )
 
@@ -54,13 +55,13 @@ func (c *consumer) Start(ctx context.Context) error {
 3 счетчик ошибок или ретурн
 */
 
-func (c *consumer) handleEvents(eventsBatch []events.Event) error {
+func (c *consumer) handleEvents(eventsBatch []commands.Event) error {
 	wg := sync.WaitGroup{}
 
 	wg.Add(len(eventsBatch))
 
 	for _, event := range eventsBatch {
-		go func(event events.Event) {
+		go func(event commands.Event) {
 			defer wg.Done()
 			if err := c.processor.Process(event); err != nil {
 				log.Printf("can't handle event: %s", err.Error())
