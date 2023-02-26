@@ -91,7 +91,7 @@ func generateText(tweet *twitterscraper.Tweet, replays []twitterScraper.SelfRepl
 
 func addInReplayTo(tweet *twitterscraper.Tweet) string {
 	result := fmt.Sprintf("\n———\n")
-	result += fmt.Sprintf("in replay to: %s:\n", tweet.Username)
+	result += fmt.Sprintf("in reply to: %s:\n", tweet.Username)
 	result += fmt.Sprintf("%s\n\n", tweet.Text)
 	return result
 }
