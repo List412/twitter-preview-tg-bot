@@ -5,19 +5,19 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"sync"
+	"time"
 	"tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events"
 )
 
-func New(tgClient *telegram.Client, twClient *twitterScraper.Scraper, users events.UsersServiceInterface) *processor {
+func New(tgClient *telegram.Client, twitterService TwitterService, users events.UsersServiceInterface) *processor {
 	usersChan := make(chan string, 10)
 	usersShareTweet := make(chan string, 10)
 	return &processor{
 		tg:              tgClient,
 		offset:          math.MaxInt64,
-		tw:              twClient,
+		twitterService:  twitterService,
 		users:           users,
 		usersChan:       usersChan,
 		usersShareTweet: usersShareTweet,
@@ -33,10 +33,32 @@ type Meta struct {
 	UserId   int
 }
 
+type TwitterService interface {
+	GetTweet(id string) (Tweet, error)
+}
+
+type Media struct {
+	Photos []string
+	Videos []string
+}
+
+type Tweet struct {
+	Media    Media
+	Text     string
+	UserName string
+	UserId   string
+	Time     time.Time
+	Likes    int
+	Retweets int
+	Quotes   int
+	Views    string
+	Replies  int
+}
+
 type processor struct { //todo rename lol
 	tg              *telegram.Client
 	offset          int
-	tw              *twitterScraper.Scraper
+	twitterService  TwitterService
 	users           events.UsersServiceInterface
 	usersChan       chan string
 	usersShareTweet chan string

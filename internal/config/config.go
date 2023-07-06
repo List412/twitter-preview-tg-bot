@@ -30,6 +30,7 @@ type Config struct {
 	Db         Db
 	Admin      Admin
 	Prometheus Prometheus
+	Twttrapi   Twttrapi
 }
 
 type Prometheus struct {
@@ -44,6 +45,11 @@ type Telegram struct {
 type Tweeter struct {
 	Token string `env:"TWITTER_TOKEN"`
 	Host  string `env:"TWITTER_HOST"`
+}
+
+type Twttrapi struct {
+	Host  string `env:"TWTTRAPI_HOST"`
+	Token string `env:"TWTTRAPI_KEY"`
 }
 
 type Storage struct {

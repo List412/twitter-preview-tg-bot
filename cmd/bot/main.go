@@ -16,7 +16,8 @@ import (
 	"regexp"
 	"syscall"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
+	"tweets-tg-bot/internal/clients/twitter"
+	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/dbConn"
 	"tweets-tg-bot/internal/events/consumer/event-consumer"
@@ -43,8 +44,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer dbConn.Close(ctx, db)
-
-	scrapper := twitterScraper.NewScrapper()
 
 	// Create a new registry.
 	reg := prometheus.NewRegistry()
@@ -86,14 +85,15 @@ func main() {
 	usersRepo := repository.New(usersCollection)
 	shareRepo := repository2.New(shareCollections)
 	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
+	twrrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.Twttrapi.Token)
+	twitterService := twitter.NewService(twrrapiClient)
 
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
-		scrapper,
+		twitterService,
 		usersServ,
 	)
 
-	go scrapper.UpdateTokenJob()
 	go eventProcessor.HandleUsers()
 
 	consumer := event_consumer.NewConsumer(eventProcessor, eventProcessor, cfg.Consumer.BatchSize)

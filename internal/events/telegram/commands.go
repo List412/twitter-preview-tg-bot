@@ -56,24 +56,24 @@ func (p *processor) doCmd(text string, chatId int, username string, userId int) 
 	}
 }
 
-func generateText(tweet *twitterscraper.Tweet, replays []twitterScraper.SelfReplay) string {
+func generateText(tweet Tweet, replays []twitterScraper.SelfReplay) string {
 	result := ""
 
-	result += fmt.Sprintf("%s tweeted:\n", tweet.Username)
+	result += fmt.Sprintf("%s(%s) tweeted:\n", tweet.UserName, tweet.UserId)
 
 	result += fmt.Sprintf("%s \n", tweet.Text)
 
-	if tweet.InReplyToStatus != nil {
-		result += addInReplayTo(tweet.InReplyToStatus)
-	}
-
-	if tweet.QuotedStatus != nil {
-		result += addInReplayTo(tweet.QuotedStatus)
-	}
-
-	if tweet.RetweetedStatus != nil {
-		result += addInReplayTo(tweet.RetweetedStatus)
-	}
+	//if tweet.InReplyToStatus != nil {
+	//	result += addInReplayTo(tweet.InReplyToStatus)
+	//}
+	//
+	//if tweet.QuotedStatus != nil {
+	//	result += addInReplayTo(tweet.QuotedStatus)
+	//}
+	//
+	//if tweet.RetweetedStatus != nil {
+	//	result += addInReplayTo(tweet.RetweetedStatus)
+	//}
 
 	if len(replays) > 0 {
 		for _, r := range replays {
@@ -82,11 +82,30 @@ func generateText(tweet *twitterscraper.Tweet, replays []twitterScraper.SelfRepl
 		result += fmt.Sprintf("\n")
 	}
 
-	twTime := time.Unix(tweet.Timestamp, 0).Format("15:04 2 Jan 2006")
+	twTime := tweet.Time.Format("15:04 · 2 Jan 2006")
 
-	result += fmt.Sprintf("%s | 💙%d| replies %d| retweets %d", twTime, tweet.Likes, tweet.Replies, tweet.Retweets)
+	result += fmt.Sprintf(
+		"%s · %s Views\n%s Retweets  %s Replies  %s Quotes  %s Likes",
+		twTime,
+		tweet.Views,
+		shortNumber(tweet.Retweets),
+		shortNumber(tweet.Replies),
+		shortNumber(tweet.Quotes),
+		shortNumber(tweet.Likes),
+	)
 
 	return result
+}
+
+func shortNumber(n int) string {
+	str := fmt.Sprintf("%d", n)
+	if n >= 1000 {
+		str = fmt.Sprintf("%.1fK", float64(n)/1000)
+	}
+	if n >= 10000 {
+		str = fmt.Sprintf("%dK", n/1000)
+	}
+	return str
 }
 
 func addInReplayTo(tweet *twitterscraper.Tweet) string {
@@ -114,16 +133,12 @@ func timeTrack(start time.Time, name string) {
 func (p *processor) sendTweet(chatId int, id string, username string) error {
 	defer timeTrack(time.Now(), "sendTweet")
 
-	tweetResult, err := p.tw.GetTweet(id)
+	tweet, err := p.twitterService.GetTweet(id)
 	if err != nil {
 		return err
 	}
 
-	tweet := tweetResult.Tweet
-
-	message := generateText(tweet, tweetResult.SelfReplay)
-
-	tweet.Photos = append(tweet.Photos, photoFromQuoted(tweet.QuotedStatus, tweet.RetweetedStatus, tweet.InReplyToStatus)...)
+	message := generateText(tweet, nil)
 
 	messages, err := chunkString(message, 1024)
 	if err != nil {
@@ -131,30 +146,30 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 	}
 
 	for _, m := range messages {
-		if len(tweet.Videos) > 0 {
+		if len(tweet.Media.Videos) > 0 {
 			err = p.tg.SendVideo(chatId, m, video(tweet))
 			if err != nil {
 				return err
 			}
-			tweet.Videos = nil
+			tweet.Media.Videos = nil
 			continue
 		}
 
-		if len(tweet.Photos) == 1 {
+		if len(tweet.Media.Photos) == 1 {
 			err = p.tg.SendPhoto(chatId, m, photos(tweet)[0])
 			if err != nil {
 				return err
 			}
-			tweet.Photos = nil
+			tweet.Media.Photos = nil
 			continue
 		}
 
-		if len(tweet.Photos) >= 2 {
+		if len(tweet.Media.Photos) >= 2 {
 			err = p.tg.SendPhotos(chatId, m, photos(tweet))
 			if err != nil {
 				return err
 			}
-			tweet.Photos = nil
+			tweet.Media.Photos = nil
 			continue
 		}
 
@@ -280,13 +295,13 @@ func parseCmd(text string) (commands.Cmd, error) {
 	return "", ErrorUnknownCommand
 }
 
-func photos(tweet *twitterscraper.Tweet) []string {
-	return tweet.Photos
+func photos(tweet Tweet) []string {
+	return tweet.Media.Photos
 }
 
-func video(tweet *twitterscraper.Tweet) string {
-	if len(tweet.Videos) > 0 {
-		return tweet.Videos[0].URL
+func video(tweet Tweet) string {
+	if len(tweet.Media.Videos) > 0 {
+		return tweet.Media.Videos[0]
 	}
 	return ""
 }
