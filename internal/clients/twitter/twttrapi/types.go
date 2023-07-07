@@ -45,6 +45,14 @@ type ParsedTweet struct {
 					UserIdStr    string `json:"user_id_str"`
 				} `json:"legacy"`
 
+				NoteTweet *struct {
+					NoteTweetResults struct {
+						Result struct {
+							Text string `json:"text"`
+						} `json:"result"`
+					} `json:"note_tweet_results"`
+				} `json:"note_tweet"`
+
 				ViewCountInfo struct {
 					Count string `json:"count"`
 					State string `json:"state"`

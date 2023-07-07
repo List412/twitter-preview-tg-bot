@@ -59,7 +59,7 @@ func (p *processor) doCmd(text string, chatId int, username string, userId int) 
 func generateText(tweet Tweet, replays []twitterScraper.SelfReplay) string {
 	result := ""
 
-	result += fmt.Sprintf("%s(%s) tweeted:\n", tweet.UserName, tweet.UserId)
+	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) tweeted:\n\n", tweet.UserName, tweet.UserId)
 
 	result += fmt.Sprintf("%s \n", tweet.Text)
 

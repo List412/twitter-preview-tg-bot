@@ -53,6 +53,7 @@ func (c *Client) SendMessage(chatId int, text string) error {
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("text", text)
 	q.Add("disable_notification", "true")
+	q.Add("parse_mode", "HTML")
 
 	_, err := c.doRequest(sendMessage, q)
 	if err != nil {
@@ -65,6 +66,7 @@ func (c *Client) SendPhotos(chatId int, text string, photos []string) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
+	q.Add("parse_mode", "HTML")
 
 	media, err := encodedPhotos(photos, text)
 	if err != nil {
@@ -86,6 +88,7 @@ func (c *Client) SendPhoto(chatId int, text string, photo string) error {
 	q.Add("photo", photo)
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
+	q.Add("parse_mode", "HTML")
 
 	resp, err := c.doRequest(sendPhoto, q)
 	if err != nil {
@@ -103,6 +106,7 @@ func (c *Client) SendVideo(chatId int, text string, video string) error {
 	q.Add("video", video)
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
+	q.Add("parse_mode", "HTML")
 
 	resp, err := c.doRequest(sendVideo, q)
 	if err != nil {

@@ -27,6 +27,9 @@ func (s Service) GetTweet(id string) (telegram.Tweet, error) {
 	tweet := telegram.Tweet{Media: telegram.Media{}}
 	tweetResult := parsedTweet.Data.TweetResult.Result.Legacy
 	tweet.Text = tweetResult.FullText
+	if parsedTweet.Data.TweetResult.Result.NoteTweet != nil {
+		tweet.Text = parsedTweet.Data.TweetResult.Result.NoteTweet.NoteTweetResults.Result.Text
+	}
 
 	tweet.Time, err = time.Parse("Mon Jan 02 15:04:05 -0700 2006", tweetResult.CreatedAt)
 	if err != nil {
