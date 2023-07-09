@@ -21,10 +21,11 @@ type ParsedTweet struct {
 
 					ExtendedEntities struct {
 						Media []struct {
-							DisplayUrl  string `json:"display_url"`
-							ExpandedUrl string `json:"expanded_url"`
-							Type        string `json:"type"`
-							VideoInfo   struct {
+							DisplayUrl    string `json:"display_url"`
+							ExpandedUrl   string `json:"expanded_url"`
+							MediaUrlHttps string `json:"media_url_https"`
+							Type          string `json:"type"`
+							VideoInfo     struct {
 								Variants []struct {
 									ContentType string `json:"content_type"`
 									Url         string `json:"url"`

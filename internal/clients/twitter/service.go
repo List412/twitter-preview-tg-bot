@@ -39,7 +39,7 @@ func (s Service) GetTweet(id string) (telegram.Tweet, error) {
 	for _, media := range tweetResult.ExtendedEntities.Media {
 		switch media.Type {
 		case "photo":
-			tweet.Media.Photos = append(tweet.Media.Photos, media.ExpandedUrl)
+			tweet.Media.Photos = append(tweet.Media.Photos, media.MediaUrlHttps)
 		case "video":
 			for i := len(media.VideoInfo.Variants) - 1; i >= 0; i-- {
 				if media.VideoInfo.Variants[i].ContentType == "video/mp4" {

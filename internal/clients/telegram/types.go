@@ -26,9 +26,10 @@ type Chat struct {
 }
 
 type Photo struct {
-	Type    string `json:"type"`
-	Media   string `json:"media"`
-	Caption string `json:"caption,omitempty"`
+	Type      string `json:"type"`
+	Media     string `json:"media"`
+	Caption   string `json:"caption,omitempty"`
+	ParseMode string `json:"parse_mode"`
 }
 
 type Button struct {

@@ -66,7 +66,6 @@ func (c *Client) SendPhotos(chatId int, text string, photos []string) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
-	q.Add("parse_mode", "HTML")
 
 	media, err := encodedPhotos(photos, text)
 	if err != nil {
@@ -158,6 +157,7 @@ func encodedPhotos(photos []string, text string) (string, error) {
 		}
 		if i == 0 {
 			photo.Caption = text
+			photo.ParseMode = "HTML"
 		}
 		InputMediaPhoto[i] = photo
 	}
