@@ -25,11 +25,10 @@ func (s Service) GetTweet(id string) (telegram.Tweet, error) {
 	}
 
 	tweet := telegram.Tweet{Media: telegram.Media{}}
-	tweetResult := parsedTweet.Data.TweetResult.Result.Legacy
-	tweet.Text = tweetResult.FullText
-	if parsedTweet.Data.TweetResult.Result.NoteTweet != nil {
-		tweet.Text = parsedTweet.Data.TweetResult.Result.NoteTweet.NoteTweetResults.Result.Text
-	}
+
+	tweetResult := getTweetData(parsedTweet)
+
+	tweet.Text = getText(parsedTweet)
 
 	tweet.Time, err = time.Parse("Mon Jan 02 15:04:05 -0700 2006", tweetResult.CreatedAt)
 	if err != nil {
@@ -54,11 +53,46 @@ func (s Service) GetTweet(id string) (telegram.Tweet, error) {
 	tweet.Quotes = tweetResult.QuoteCount
 	tweet.Retweets = tweetResult.RetweetCount
 	tweet.Replies = tweetResult.ReplyCount
-	tweet.Views = parsedTweet.Data.TweetResult.Result.ViewCountInfo.Count
+	tweet.Views = getViewsCount(parsedTweet)
 
-	userResult := parsedTweet.Data.TweetResult.Result.Core.UserResult.Result.Legacy
+	userResult := getUserData(parsedTweet)
 	tweet.UserName = userResult.Name
 	tweet.UserId = userResult.ScreenName
 
 	return tweet, nil
+}
+
+func getUserData(tweet *twttrapi.ParsedTweet) twttrapi.UserData {
+	if tweet.Data.TweetResult.Result.Core != nil {
+		return tweet.Data.TweetResult.Result.Core.UserResult.Result.Legacy
+	}
+	return tweet.Data.TweetResult.Result.Tweet.Core.UserResult.Result.Legacy
+}
+
+func getTweetData(tweet *twttrapi.ParsedTweet) twttrapi.TweetData {
+	if tweet.Data.TweetResult.Result.Legacy != nil {
+		return *tweet.Data.TweetResult.Result.Legacy
+	}
+	return *tweet.Data.TweetResult.Result.Tweet.Legacy
+}
+
+func getText(tweet *twttrapi.ParsedTweet) string {
+	tw := tweet.Data.TweetResult.Result
+	if tw.Core == nil && tw.Tweet != nil {
+		tw = tw.Tweet
+	}
+
+	if tw.NoteTweet != nil {
+		return tw.NoteTweet.NoteTweetResults.Result.Text
+	}
+
+	return tw.Legacy.FullText
+}
+
+func getViewsCount(tweet *twttrapi.ParsedTweet) string {
+	tw := tweet.Data.TweetResult.Result
+	if tw.Core == nil && tw.Tweet != nil {
+		tw = tw.Tweet
+	}
+	return tw.ViewCountInfo.Count
 }
