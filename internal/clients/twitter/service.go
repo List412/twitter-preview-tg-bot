@@ -4,6 +4,7 @@ import (
 	"time"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/events/telegram"
+	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type Client interface {
@@ -18,13 +19,16 @@ func NewService(client Client) *Service {
 	return &Service{client: client}
 }
 
-func (s Service) GetTweet(id string) (telegram.Tweet, error) {
+func (s Service) GetTweet(id string) (tgTypes.Tweet, error) {
 	parsedTweet, err := s.client.GetTweet(id)
 	if err != nil {
-		return telegram.Tweet{}, err
+		return tgTypes.Tweet{}, err
+	}
+	if parsedTweet.Errors != nil || parsedTweet.Error != nil {
+		return tgTypes.Tweet{}, telegram.ErrApiResponse
 	}
 
-	tweet := telegram.Tweet{Media: telegram.Media{}}
+	tweet := tgTypes.Tweet{Media: tgTypes.Media{}}
 
 	tweetResult := getTweetData(parsedTweet)
 
@@ -38,11 +42,18 @@ func (s Service) GetTweet(id string) (telegram.Tweet, error) {
 	for _, media := range tweetResult.ExtendedEntities.Media {
 		switch media.Type {
 		case "photo":
-			tweet.Media.Photos = append(tweet.Media.Photos, media.MediaUrlHttps)
+			tweet.Media.Photos = append(tweet.Media.Photos, tgTypes.MediaObject{Url: media.MediaUrlHttps})
+		case "animated_gif":
+			fallthrough
 		case "video":
 			for i := len(media.VideoInfo.Variants) - 1; i >= 0; i-- {
 				if media.VideoInfo.Variants[i].ContentType == "video/mp4" {
-					tweet.Media.Videos = append(tweet.Media.Videos, media.VideoInfo.Variants[i].Url)
+					tweet.Media.Videos = append(tweet.Media.Videos, tgTypes.MediaObject{
+						Name:       media.MediaKey,
+						Url:        media.VideoInfo.Variants[i].Url,
+						Data:       nil,
+						NeedUpload: true,
+					})
 					break
 				}
 			}

@@ -25,11 +25,11 @@ type Chat struct {
 	ID int `json:"id"`
 }
 
-type Photo struct {
+type MediaObject struct {
 	Type      string `json:"type"`
 	Media     string `json:"media"`
 	Caption   string `json:"caption,omitempty"`
-	ParseMode string `json:"parse_mode"`
+	ParseMode string `json:"parse_mode,omitempty"`
 }
 
 type Button struct {

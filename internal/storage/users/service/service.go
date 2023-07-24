@@ -78,6 +78,10 @@ func (s service) AddShare(ctx context.Context, userName string) error {
 	return nil
 }
 
+func (s service) GetAdminId() int {
+	return s.cfg.Id
+}
+
 func (s service) IsAdmin(userId int) (bool, error) {
 	if userId == 0 {
 		return false, nil

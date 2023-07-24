@@ -1,13 +1,17 @@
 package telegram
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
+	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func NewClient(host string, token string) *Client {
@@ -35,7 +39,7 @@ func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 	q.Add("offset", strconv.Itoa(offset))
 	q.Add("limit", strconv.Itoa(limit))
 
-	data, err := c.doRequest(getUpdates, q)
+	data, err := c.get(getUpdates, q)
 	if err != nil {
 		return nil, err
 	}
@@ -55,25 +59,48 @@ func (c *Client) SendMessage(chatId int, text string) error {
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
 
-	_, err := c.doRequest(sendMessage, q)
+	_, err := c.get(sendMessage, q)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Client) SendPhotos(chatId int, text string, photos []string) error {
+// SendPhotos
+// send photos
+func (c *Client) SendPhotos(chatId int, text string, mediaUrls []tgTypes.MediaObject, mediaType mediaType) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
 
-	media, err := encodedPhotos(photos, text)
+	encodedMedia, err := encodedMediaObjects(mediaUrls, text, mediaType)
 	if err != nil {
 		return err
 	}
-	q.Add("media", media)
+	q.Add("media", encodedMedia)
 
-	_, err = c.doRequest(sendPhotos, q)
+	_, err = c.get(sendPhotos, q)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SendVideos
+// send videos
+func (c *Client) SendVideos(chatId int, text string, mediaUrls []tgTypes.MediaObject, mediaType mediaType) error {
+	q := url.Values{}
+	q.Add("chat_id", strconv.Itoa(chatId))
+	q.Add("disable_notification", "true")
+
+	encodedMedia, err := encodedMediaObjects(mediaUrls, text, mediaType)
+	if err != nil {
+		return err
+	}
+	q.Add("media", encodedMedia)
+
+	_, err = c.postMultipart(sendPhotos, q, mediaUrls)
 	if err != nil {
 		return err
 	}
@@ -89,7 +116,7 @@ func (c *Client) SendPhoto(chatId int, text string, photo string) error {
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
 
-	resp, err := c.doRequest(sendPhoto, q)
+	resp, err := c.get(sendPhoto, q)
 	if err != nil {
 		return err
 	}
@@ -99,15 +126,16 @@ func (c *Client) SendPhoto(chatId int, text string, photo string) error {
 	return nil
 }
 
-func (c *Client) SendVideo(chatId int, text string, video string) error {
+func (c *Client) SendVideo(chatId int, text string, video tgTypes.MediaObject) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
-	q.Add("video", video)
+	videoPath := video.Url
+	q.Add("video", videoPath)
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
 
-	resp, err := c.doRequest(sendVideo, q)
+	resp, err := c.get(sendVideo, q)
 	if err != nil {
 		return err
 	}
@@ -117,7 +145,56 @@ func (c *Client) SendVideo(chatId int, text string, video string) error {
 	return nil
 }
 
-func (c *Client) doRequest(method string, query url.Values) ([]byte, error) {
+func (c *Client) do(req *http.Request) ([]byte, error) {
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while making request")
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while reading response body")
+	}
+	if resp.StatusCode >= http.StatusBadRequest {
+		return nil, errors.New(string(body))
+	}
+	return body, nil
+}
+
+func (c *Client) postMultipart(method string, query url.Values, files []tgTypes.MediaObject) ([]byte, error) {
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	u := url.URL{
+		Scheme: "https",
+		Host:   c.host,
+		Path:   path.Join(c.basePath, method),
+	}
+
+	for _, v := range files {
+		part, err := w.CreateFormFile(v.Name, v.Name)
+		if err != nil {
+			return nil, err
+		}
+		r := bytes.NewReader(v.Data)
+		io.Copy(part, r)
+	}
+
+	w.Close()
+	req, err := http.NewRequest(http.MethodPost, u.String(), &b)
+	if err != nil {
+		return nil, err
+	}
+
+	req.URL.RawQuery = query.Encode()
+
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	return c.do(req)
+}
+
+func (c *Client) get(method string, query url.Values) ([]byte, error) {
 	u := url.URL{
 		Scheme: "https",
 		Host:   c.host,
@@ -131,38 +208,39 @@ func (c *Client) doRequest(method string, query url.Values) ([]byte, error) {
 
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error while making request: %s", method)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error while reading response %s body", method)
-	}
-	return body, nil
+	return c.do(req)
 }
 
 func basePath(token string) string {
 	return "bot" + token
 }
 
-func encodedPhotos(photos []string, text string) (string, error) {
-	InputMediaPhoto := make([]Photo, len(photos))
-	for i, p := range photos {
-		photo := Photo{
-			Type:  "photo",
-			Media: p,
+type mediaType = string
+
+const MediaTypePhoto mediaType = "photo"
+const MediaTypeVideo mediaType = "video"
+
+func encodedMediaObjects(mediaUrls []tgTypes.MediaObject, text string, mediaType mediaType) (string, error) {
+	//mediaObjects := make([]MediaObject, len(mediaUrls))
+	var mediaObjects []MediaObject
+	for i, v := range mediaUrls {
+		mediaPath := v.Url
+		if v.NeedUpload {
+			mediaPath = fmt.Sprintf("attach://%s", v.Name)
+		}
+		media := MediaObject{
+			Type:  mediaType,
+			Media: mediaPath,
 		}
 		if i == 0 {
-			photo.Caption = text
-			photo.ParseMode = "HTML"
+			media.Caption = text
+			media.ParseMode = "HTML"
 		}
-		InputMediaPhoto[i] = photo
+		//mediaObjects[i] = media
+		mediaObjects = append(mediaObjects, media)
 	}
 
-	encoded, err := json.Marshal(InputMediaPhoto)
+	encoded, err := json.Marshal(mediaObjects)
 	if err != nil {
 		return "", err
 	}

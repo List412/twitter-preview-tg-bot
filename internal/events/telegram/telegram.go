@@ -5,10 +5,10 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"sync"
-	"time"
 	"tweets-tg-bot/internal/clients/telegram"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events"
+	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func New(tgClient *telegram.Client, twitterService TwitterService, users events.UsersServiceInterface) *processor {
@@ -34,25 +34,7 @@ type Meta struct {
 }
 
 type TwitterService interface {
-	GetTweet(id string) (Tweet, error)
-}
-
-type Media struct {
-	Photos []string
-	Videos []string
-}
-
-type Tweet struct {
-	Media    Media
-	Text     string
-	UserName string
-	UserId   string
-	Time     time.Time
-	Likes    int
-	Retweets int
-	Quotes   int
-	Views    string
-	Replies  int
+	GetTweet(id string) (tgTypes.Tweet, error)
 }
 
 type processor struct { //todo rename lol

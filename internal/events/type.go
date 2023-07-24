@@ -19,6 +19,7 @@ type UsersServiceInterface interface {
 	Add(ctx context.Context, userName string) error
 	AddShare(ctx context.Context, userName string) error
 	IsAdmin(userId int) (bool, error)
+	GetAdminId() int
 	Count(ctx context.Context) (int, error)
 	CountShare(ctx context.Context) (int, error)
 	Command(cmd commands.Cmd, userName string)

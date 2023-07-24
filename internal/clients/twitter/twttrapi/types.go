@@ -11,6 +11,7 @@ type TweetData struct {
 			ExpandedUrl   string `json:"expanded_url"`
 			MediaUrlHttps string `json:"media_url_https"`
 			Type          string `json:"type"`
+			MediaKey      string `json:"media_key"`
 			VideoInfo     struct {
 				Variants []struct {
 					ContentType string `json:"content_type"`
@@ -71,4 +72,9 @@ type ParsedTweet struct {
 			Result *Tweet `json:"result"`
 		} `json:"tweet_result"`
 	} `json:"data"`
+	Errors []struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"errors"`
+	Error *string `json:"error"`
 }
