@@ -36,6 +36,12 @@ func Test_parseTweeterUrl(t *testing.T) {
 			want:    "1579008825738526720",
 			wantErr: false,
 		},
+		{
+			name:    "new twitter url: x.com",
+			args:    args{text: "https://x.com/gazpachomachine/status/1692189825816789058?s=46&t=RU5XEuJSgxHmd53V-3wyuQ"},
+			want:    "1692189825816789058",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

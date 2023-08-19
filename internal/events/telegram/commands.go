@@ -281,11 +281,21 @@ func (p *processor) sendStats(id int, userId int) error {
 func parseTweeterUrl(text string) (string, error) {
 	u, err := url.Parse(text)
 
+	twitterHosts := []string{"twitter.com", "x.com"}
+
 	if err != nil {
 		return "", err
 	}
 
-	if u.Host != "twitter.com" {
+	isTwitterUrl := false
+	for _, h := range twitterHosts {
+		if h == u.Host {
+			isTwitterUrl = true
+			break
+		}
+	}
+
+	if !isTwitterUrl {
 		return "", errors.New("not a twitter url")
 	}
 
