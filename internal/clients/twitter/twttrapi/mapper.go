@@ -1,29 +1,12 @@
-package twitter
+package twttrapi
 
 import (
 	"time"
-	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/events/telegram"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-type Client interface {
-	GetTweet(id string) (*twttrapi.ParsedTweet, error)
-}
-
-type Service struct {
-	client Client
-}
-
-func NewService(client Client) *Service {
-	return &Service{client: client}
-}
-
-func (s Service) GetTweet(id string) (tgTypes.Tweet, error) {
-	parsedTweet, err := s.client.GetTweet(id)
-	if err != nil {
-		return tgTypes.Tweet{}, err
-	}
+func Map(parsedTweet *ParsedTweet) (tgTypes.Tweet, error) {
 	if parsedTweet.Errors != nil || parsedTweet.Error != nil {
 		return tgTypes.Tweet{}, telegram.ErrApiResponse
 	}
@@ -34,10 +17,11 @@ func (s Service) GetTweet(id string) (tgTypes.Tweet, error) {
 
 	tweet.Text = getText(parsedTweet)
 
-	tweet.Time, err = time.Parse("Mon Jan 02 15:04:05 -0700 2006", tweetResult.CreatedAt)
+	tweetTime, err := time.Parse("Mon Jan 02 15:04:05 -0700 2006", tweetResult.CreatedAt)
 	if err != nil {
-		tweet.Time = time.Now()
+		tweetTime = time.Now()
 	}
+	tweet.Time = tweetTime
 
 	for _, media := range tweetResult.ExtendedEntities.Media {
 		switch media.Type {
@@ -73,21 +57,21 @@ func (s Service) GetTweet(id string) (tgTypes.Tweet, error) {
 	return tweet, nil
 }
 
-func getUserData(tweet *twttrapi.ParsedTweet) twttrapi.UserData {
+func getUserData(tweet *ParsedTweet) UserData {
 	if tweet.Data.TweetResult.Result.Core != nil {
 		return tweet.Data.TweetResult.Result.Core.UserResult.Result.Legacy
 	}
 	return tweet.Data.TweetResult.Result.Tweet.Core.UserResult.Result.Legacy
 }
 
-func getTweetData(tweet *twttrapi.ParsedTweet) twttrapi.TweetData {
+func getTweetData(tweet *ParsedTweet) TweetData {
 	if tweet.Data.TweetResult.Result.Legacy != nil {
 		return *tweet.Data.TweetResult.Result.Legacy
 	}
 	return *tweet.Data.TweetResult.Result.Tweet.Legacy
 }
 
-func getText(tweet *twttrapi.ParsedTweet) string {
+func getText(tweet *ParsedTweet) string {
 	tw := tweet.Data.TweetResult.Result
 	if tw.Core == nil && tw.Tweet != nil {
 		tw = tw.Tweet
@@ -100,7 +84,7 @@ func getText(tweet *twttrapi.ParsedTweet) string {
 	return tw.Legacy.FullText
 }
 
-func getViewsCount(tweet *twttrapi.ParsedTweet) string {
+func getViewsCount(tweet *ParsedTweet) string {
 	tw := tweet.Data.TweetResult.Result
 	if tw.Core == nil && tw.Tweet != nil {
 		tw = tw.Tweet

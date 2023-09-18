@@ -88,10 +88,14 @@ func generateText(tweet tgTypes.Tweet, replays []twitterScraper.SelfReplay) stri
 
 	twTime := tweet.Time.Format("15:04 · 2 Jan 2006")
 
+	result += fmt.Sprintf("%s", twTime)
+
+	if tweet.Views != "" {
+		result += fmt.Sprintf("%s Views", tweet.Views)
+	}
+
 	result += fmt.Sprintf(
-		"%s · %s Views\n%s Retweets  %s Replies  %s Quotes  %s Likes",
-		twTime,
-		tweet.Views,
+		"\n%s Retweets  %s Replies  %s Quotes  %s Likes",
 		shortNumber(tweet.Retweets),
 		shortNumber(tweet.Replies),
 		shortNumber(tweet.Quotes),

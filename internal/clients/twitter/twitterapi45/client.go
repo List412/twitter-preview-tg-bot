@@ -1,8 +1,9 @@
-package twttrapi
+package twitterapi45
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"log"
 	"net/url"
 	"tweets-tg-bot/internal/clients/rapidApi"
@@ -16,11 +17,11 @@ type Client struct {
 	rapidApi.Client
 }
 
-const getTweet = "get-tweet"
+const getTweet = "tweet.php"
 
-func (c *Client) GetTweet(ctx context.Context, id string) (*ParsedTweet, error) {
+func (c *Client) GetTweet(ctx context.Context, id string) (*Response, error) {
 	q := url.Values{}
-	q.Add("tweet_id", id)
+	q.Add("id", id)
 
 	response, err := c.DoRequest(ctx, getTweet, q)
 	if err != nil {
@@ -29,10 +30,10 @@ func (c *Client) GetTweet(ctx context.Context, id string) (*ParsedTweet, error) 
 
 	log.Printf("GetTweet done %s", id)
 
-	var tweet ParsedTweet
+	var tweet Response
 	if err := json.Unmarshal(response, &tweet); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal error")
 	}
 
-	return &tweet, nil
+	return &tweet, err
 }

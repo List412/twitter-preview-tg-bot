@@ -16,7 +16,7 @@ import (
 	"regexp"
 	"syscall"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/clients/twitter"
+	"tweets-tg-bot/internal/clients/twitter/twitterapi45"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/dbConn"
@@ -26,6 +26,7 @@ import (
 	repository2 "tweets-tg-bot/internal/storage/share/repository"
 	"tweets-tg-bot/internal/storage/users/repository"
 	"tweets-tg-bot/internal/storage/users/service"
+	"tweets-tg-bot/internal/tweetProvider"
 )
 
 func main() {
@@ -85,8 +86,13 @@ func main() {
 	usersRepo := repository.New(usersCollection)
 	shareRepo := repository2.New(shareCollections)
 	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
-	twrrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.Twttrapi.Token)
-	twitterService := twitter.NewService(twrrapiClient)
+
+	twttrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.RapidApi.Token)
+	twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
+
+	twitterService := tweetProvider.NewProvider()
+	twitterService.RegisterApi("twttrapi", twttrapi.NewService(twttrapiClient))
+	twitterService.RegisterApi("twitter-api45", twitterapi45.NewService(twitterApi45Client))
 
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
