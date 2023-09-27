@@ -22,13 +22,15 @@ type Response struct {
 			MediaUrlHttps string `json:"media_url_https"`
 		} `json:"photo"`
 		Video []struct {
-			MediaUrlHttps string `json:"media_url_https"`
-			Variants      []struct {
-				ContentType string `json:"content_type"`
-				Url         string `json:"url"`
-				Bitrate     int    `json:"bitrate,omitempty"`
-			} `json:"variants"`
+			MediaUrlHttps string    `json:"media_url_https"`
+			Variants      []Variant `json:"variants"`
 		} `json:"video"`
 	} `json:"media"`
 	Id string `json:"id"`
+}
+
+type Variant struct {
+	ContentType string `json:"content_type"`
+	Url         string `json:"url"`
+	Bitrate     int    `json:"bitrate,omitempty"`
 }

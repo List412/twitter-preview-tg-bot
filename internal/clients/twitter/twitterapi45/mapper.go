@@ -32,13 +32,23 @@ func Map(parsedTweet *Response) (tgTypes.Tweet, error) {
 	}
 
 	for i, video := range parsedTweet.Media.Video {
+		variant := getVideoFromVariants(video.Variants)
 		media := tgTypes.MediaObject{
-			Name:       video.Variants[1].ContentType + "_" + strconv.Itoa(i),
-			Url:        video.Variants[1].Url,
+			Name:       variant.ContentType + "_" + strconv.Itoa(i),
+			Url:        variant.Url,
 			NeedUpload: true,
 		}
-		tweet.Media.Videos = append(tweet.Media.Photos, media)
+		tweet.Media.Videos = append(tweet.Media.Videos, media)
 	}
 
 	return tweet, nil
+}
+
+func getVideoFromVariants(variants []Variant) Variant {
+	for _, v := range variants {
+		if v.ContentType == "video/mp4" {
+			return v
+		}
+	}
+	return variants[0]
 }
