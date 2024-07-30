@@ -30,7 +30,7 @@ type Client struct {
 
 const getUpdates = "getUpdates"
 const sendMessage = "sendMessage"
-const sendPhotos = "sendMediaGroup"
+const sendMediaGroup = "sendMediaGroup"
 const sendPhoto = "sendPhoto"
 const sendVideo = "sendVideo"
 
@@ -79,7 +79,7 @@ func (c *Client) SendPhotos(chatId int, text string, mediaUrls []tgTypes.MediaOb
 	}
 	q.Add("media", encodedMedia)
 
-	_, err = c.get(sendPhotos, q)
+	_, err = c.get(sendMediaGroup, q)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (c *Client) SendVideos(chatId int, text string, mediaUrls []tgTypes.MediaOb
 	}
 	q.Add("media", encodedMedia)
 
-	_, err = c.postMultipart(sendPhotos, q, mediaUrls)
+	_, err = c.postMultipart(sendMediaGroup, q, mediaUrls)
 	if err != nil {
 		return err
 	}
@@ -135,12 +135,10 @@ func (c *Client) SendVideo(chatId int, text string, video tgTypes.MediaObject) e
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
 
-	resp, err := c.get(sendVideo, q)
+	_, err := c.get(sendVideo, q)
 	if err != nil {
 		return err
 	}
-
-	_ = resp
 
 	return nil
 }
@@ -241,6 +239,31 @@ func encodedMediaObjects(mediaUrls []tgTypes.MediaObject, text string, mediaType
 	}
 
 	encoded, err := json.Marshal(mediaObjects)
+	if err != nil {
+		return "", err
+	}
+
+	return string(encoded), nil
+}
+
+func encodedMediaObject(mediaUrl tgTypes.MediaObject, text string, mediaType mediaType) (string, error) {
+	mediaPath := mediaUrl.Url
+	if mediaUrl.NeedUpload {
+		mediaPath = fmt.Sprintf("attach://%s", mediaUrl.Name)
+	}
+	media := struct {
+		Type      string
+		Video     string
+		Caption   string
+		ParseMode string
+	}{
+		Type:      mediaType,
+		Video:     mediaPath,
+		Caption:   text,
+		ParseMode: "HTML",
+	}
+
+	encoded, err := json.Marshal(media)
 	if err != nil {
 		return "", err
 	}

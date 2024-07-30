@@ -4,6 +4,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"io"
 	"net/http"
+	"strconv"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -42,4 +43,19 @@ func DownloadFile(url string) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+func FileSize(url string) (uint64, error) {
+	resp, err := http.Head(url)
+	if err != nil {
+		return 0, err
+	}
+
+	contentLength := resp.Header.Get("Content-Length")
+	result, err := strconv.ParseUint(contentLength, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
 }

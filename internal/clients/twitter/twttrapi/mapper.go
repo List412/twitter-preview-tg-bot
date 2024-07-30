@@ -2,6 +2,7 @@ package twttrapi
 
 import (
 	"time"
+	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/telegram"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
@@ -30,17 +31,12 @@ func Map(parsedTweet *ParsedTweet) (tgTypes.Tweet, error) {
 		case "animated_gif":
 			fallthrough
 		case "video":
-			for i := len(media.VideoInfo.Variants) - 1; i >= 0; i-- {
-				if media.VideoInfo.Variants[i].ContentType == "video/mp4" {
-					tweet.Media.Videos = append(tweet.Media.Videos, tgTypes.MediaObject{
-						Name:       media.MediaKey,
-						Url:        media.VideoInfo.Variants[i].Url,
-						Data:       nil,
-						NeedUpload: true,
-					})
-					break
-				}
+			variant, err := chooseVideoVariant(media.VideoInfo.Variants)
+			if err != nil {
+				return tgTypes.Tweet{}, err
 			}
+			variant.Name = media.MediaKey
+			tweet.Media.Videos = append(tweet.Media.Videos, *variant)
 		}
 	}
 
@@ -90,4 +86,23 @@ func getViewsCount(tweet *ParsedTweet) string {
 		tw = tw.Tweet
 	}
 	return tw.ViewCountInfo.Count
+}
+
+func chooseVideoVariant(variants []Variant) (*tgTypes.MediaObject, error) {
+	for i := len(variants) - 1; i >= 0; i-- {
+		if variants[i].ContentType == "video/mp4" {
+			size, err := downloader.FileSize(variants[i].Url)
+			if err != nil {
+				return nil, err
+			}
+
+			if size <= 50*1024*1024 {
+				return &tgTypes.MediaObject{
+					Url:        variants[i].Url,
+					NeedUpload: true,
+				}, nil
+			}
+		}
+	}
+	return nil, nil
 }

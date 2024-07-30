@@ -1,5 +1,10 @@
 package twttrapi
 
+type Variant struct {
+	ContentType string `json:"content_type"`
+	Url         string `json:"url"`
+}
+
 type TweetData struct {
 	ConversationIdStr string `json:"conversation_id_str"`
 	CreatedAt         string `json:"created_at"`
@@ -13,10 +18,7 @@ type TweetData struct {
 			Type          string `json:"type"`
 			MediaKey      string `json:"media_key"`
 			VideoInfo     struct {
-				Variants []struct {
-					ContentType string `json:"content_type"`
-					Url         string `json:"url"`
-				} `json:"variants"`
+				Variants []Variant `json:"variants"`
 			} `json:"video_info"`
 		} `json:"media"`
 	} `json:"extended_entities"`

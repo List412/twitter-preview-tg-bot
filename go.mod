@@ -1,10 +1,9 @@
 module tweets-tg-bot
 
-go 1.18
+go 1.20
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1
-	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.4.0
 	github.com/n0madic/twitter-scraper v0.0.0-20220616082230-d75fe13dd628
 	github.com/pkg/errors v0.9.1

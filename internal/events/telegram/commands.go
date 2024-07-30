@@ -178,7 +178,7 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 		if len(tweet.Media.Videos) == 1 {
 			err = p.tg.SendVideo(chatId, m, video(tweet))
 			if err != nil {
-				return err
+				return errors.Wrap(err, "SendVideo error")
 			}
 			tweet.Media.Videos = nil
 			continue
