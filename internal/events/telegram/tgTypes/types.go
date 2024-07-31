@@ -26,3 +26,20 @@ type Tweet struct {
 	Views    string
 	Replies  int
 }
+
+type TweetContent struct {
+	Text  string
+	Media Media
+}
+
+type TweetThread struct {
+	UserName string
+	UserId   string
+	Time     time.Time
+	Likes    int
+	Retweets int
+	Quotes   int
+	Views    string
+	Replies  int
+	Tweets   []TweetContent
+}

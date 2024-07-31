@@ -10,6 +10,15 @@ type TweetData struct {
 	CreatedAt         string `json:"created_at"`
 	DisplayTextRange  []int  `json:"display_text_range"`
 
+	Entities struct {
+		Urls []struct {
+			Indices     []int  `json:"indices"`
+			Url         string `json:"url"`
+			ExpandedUrl string `json:"expanded_url"`
+			DisplayUrl  string `json:"display_url"`
+		} `json:"urls"`
+	} `json:"entities"`
+
 	ExtendedEntities struct {
 		Media []struct {
 			DisplayUrl    string `json:"display_url"`
@@ -73,6 +82,55 @@ type ParsedTweet struct {
 		TweetResult struct {
 			Result *Tweet `json:"result"`
 		} `json:"tweet_result"`
+	} `json:"data"`
+	Errors []struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"errors"`
+	Error *string `json:"error"`
+}
+
+type Entity struct {
+	Content struct {
+		Content struct {
+			TweetDisplayType string `json:"tweetDisplayType,omitempty"`
+			TweetResult      struct {
+				Result *Tweet `json:"result"`
+			} `json:"tweetResult,omitempty"`
+			CursorType string `json:"cursorType,omitempty"`
+			Value      string `json:"value,omitempty"`
+		} `json:"content,omitempty"`
+		Items []struct {
+			EntryId string `json:"entryId"`
+			Item    struct {
+				Content struct {
+					Typename         string `json:"__typename"`
+					TweetDisplayType string `json:"tweetDisplayType,omitempty"`
+					TweetResult      struct {
+						Result *Tweet `json:"result"`
+					} `json:"tweetResult,omitempty"`
+				} `json:"content"`
+			} `json:"item"`
+		} `json:"items,omitempty"`
+		ModuleDisplayType string `json:"moduleDisplayType,omitempty"`
+	} `json:"content"`
+	EntryId   string `json:"entryId"`
+	SortIndex string `json:"sortIndex"`
+}
+
+type ParsedThread struct {
+	Data struct {
+		TimelineResponse struct {
+			Instructions []struct {
+				Entries   []Entity `json:"entries,omitempty"`
+				Direction string   `json:"direction,omitempty"`
+			} `json:"instructions"`
+			Metadata struct {
+				ReaderModeConfig struct {
+					IsReaderModeAvailable bool `json:"is_reader_mode_available"`
+				} `json:"readerModeConfig"`
+			} `json:"metadata"`
+		} `json:"timeline_response"`
 	} `json:"data"`
 	Errors []struct {
 		Code    int    `json:"code"`

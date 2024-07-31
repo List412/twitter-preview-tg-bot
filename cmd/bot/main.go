@@ -16,7 +16,6 @@ import (
 	"regexp"
 	"syscall"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/clients/twitter/twitterapi45"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/dbConn"
@@ -88,11 +87,11 @@ func main() {
 	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
 
 	twttrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.RapidApi.Token)
-	twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
+	//twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
 
 	twitterService := tweetProvider.NewProvider()
 	twitterService.RegisterApi("twttrapi", twttrapi.NewService(twttrapiClient))
-	twitterService.RegisterApi("twitter-api45", twitterapi45.NewService(twitterApi45Client))
+	//twitterService.RegisterApi("twitter-api45", twitterapi45.NewService(twitterApi45Client))
 
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),

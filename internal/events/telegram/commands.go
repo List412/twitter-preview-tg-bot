@@ -8,10 +8,10 @@ import (
 	"log"
 	"math/rand"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/clients/twitter/twitterScraper"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
@@ -24,7 +24,7 @@ var AllCommands = []commands.Cmd{
 var ErrorUnknownCommand = errors.New("unknown command")
 var ErrApiResponse = errors.New("api error")
 
-func (p *processor) doCmd(text string, chatId int, username string, userId int) error {
+func (p *Processor) doCmd(text string, chatId int, username string, userId int) error {
 	text = strings.TrimSpace(text)
 
 	cmd, err := parseCmd(text)
@@ -60,47 +60,38 @@ func (p *processor) doCmd(text string, chatId int, username string, userId int) 
 	}
 }
 
-func generateText(tweet tgTypes.Tweet, replays []twitterScraper.SelfReplay) string {
+func generateHeader(tweet tgTypes.TweetThread) string {
 	result := ""
 
-	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) tweeted:\n\n", tweet.UserName, tweet.UserId)
-
-	result += fmt.Sprintf("%s \n", tweet.Text)
-
-	//if tweet.InReplyToStatus != nil {
-	//	result += addInReplayTo(tweet.InReplyToStatus)
-	//}
-	//
-	//if tweet.QuotedStatus != nil {
-	//	result += addInReplayTo(tweet.QuotedStatus)
-	//}
-	//
-	//if tweet.RetweetedStatus != nil {
-	//	result += addInReplayTo(tweet.RetweetedStatus)
-	//}
-
-	if len(replays) > 0 {
-		for _, r := range replays {
-			result += fmt.Sprintf("%s\n", r.Text)
-		}
-		result += fmt.Sprintf("\n")
-	}
+	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) tweeted:\n", tweet.UserName, tweet.UserId)
 
 	twTime := tweet.Time.Format("15:04 · 2 Jan 2006")
 
 	result += fmt.Sprintf("%s", twTime)
 
 	if tweet.Views != "" {
-		result += fmt.Sprintf("%s Views", tweet.Views)
+		views, err := strconv.Atoi(tweet.Views)
+		if err == nil {
+			tweet.Views = shortNumber(views)
+		}
+		result += fmt.Sprintf(" %s Views", tweet.Views)
 	}
 
 	result += fmt.Sprintf(
-		"\n%s Retweets  %s Replies  %s Quotes  %s Likes",
+		"\n%s Retweets  %s Replies  %s Quotes  %s Likes \n\n",
 		shortNumber(tweet.Retweets),
 		shortNumber(tweet.Replies),
 		shortNumber(tweet.Quotes),
 		shortNumber(tweet.Likes),
 	)
+
+	return result
+}
+
+func generateText(tweet tgTypes.TweetContent) string {
+	result := ""
+
+	result += fmt.Sprintf("%s \n", tweet.Text)
 
 	return result
 }
@@ -138,7 +129,7 @@ func timeTrack(start time.Time, name string) {
 	log.Printf("%s took %s", name, elapsed)
 }
 
-func (p *processor) sendTweet(chatId int, id string, username string) error {
+func (p *Processor) sendTweet(chatId int, id string, username string) error {
 	defer timeTrack(time.Now(), "sendTweet")
 
 	tweet, err := p.twitterService.GetTweet(id)
@@ -150,64 +141,70 @@ func (p *processor) sendTweet(chatId int, id string, username string) error {
 		return err
 	}
 
-	message := generateText(tweet, nil)
+	for i, tw := range tweet.Tweets {
 
-	messages, err := chunkString(message, 1024)
-	if err != nil {
-		return err
-	}
+		message := generateText(tw)
 
-	if len(tweet.Media.Videos) >= 2 {
-		downloaded, err := downloader.Download(tweet.Media.Videos)
+		if i == 0 {
+			message = generateHeader(tweet) + message
+		}
+
+		if len(tweet.Tweets[i].Media.Videos) >= 2 {
+			downloaded, err := downloader.Download(tweet.Tweets[i].Media.Videos)
+			if err != nil {
+				return err
+			}
+			tweet.Tweets[i].Media.Videos = downloaded
+		}
+
+		messages, err := chunkString(message, 1024)
 		if err != nil {
 			return err
 		}
-		tweet.Media.Videos = downloaded
+
+		for _, m := range messages {
+			if len(tweet.Tweets[i].Media.Videos) >= 2 {
+				err = p.tg.SendVideos(chatId, m, tweet.Tweets[i].Media.Videos, telegram.MediaTypeVideo)
+				if err != nil {
+					return err
+				}
+				tweet.Tweets[i].Media.Videos = nil
+				continue
+			}
+
+			if len(tweet.Tweets[i].Media.Videos) == 1 {
+				err = p.tg.SendVideo(chatId, m, video(tw))
+				if err != nil {
+					return errors.Wrap(err, "SendVideo error")
+				}
+				tweet.Tweets[i].Media.Videos = nil
+				continue
+			}
+
+			if len(tweet.Tweets[i].Media.Photos) == 1 {
+				err = p.tg.SendPhoto(chatId, m, photos(tw)[0].Url)
+				if err != nil {
+					return err
+				}
+				tweet.Tweets[i].Media.Photos = nil
+				continue
+			}
+
+			if len(tweet.Tweets[i].Media.Photos) >= 2 {
+				err = p.tg.SendPhotos(chatId, m, photos(tw), telegram.MediaTypePhoto)
+				if err != nil {
+					return err
+				}
+				tweet.Tweets[i].Media.Photos = nil
+				continue
+			}
+
+			if err := p.tg.SendMessage(chatId, m); err != nil {
+				return err
+			}
+			continue
+		}
 	}
-
-	for _, m := range messages {
-		if len(tweet.Media.Videos) >= 2 {
-			err = p.tg.SendVideos(chatId, m, tweet.Media.Videos, telegram.MediaTypeVideo)
-			if err != nil {
-				return err
-			}
-			tweet.Media.Videos = nil
-			continue
-		}
-
-		if len(tweet.Media.Videos) == 1 {
-			err = p.tg.SendVideo(chatId, m, video(tweet))
-			if err != nil {
-				return errors.Wrap(err, "SendVideo error")
-			}
-			tweet.Media.Videos = nil
-			continue
-		}
-
-		if len(tweet.Media.Photos) == 1 {
-			err = p.tg.SendPhoto(chatId, m, photos(tweet)[0].Url)
-			if err != nil {
-				return err
-			}
-			tweet.Media.Photos = nil
-			continue
-		}
-
-		if len(tweet.Media.Photos) >= 2 {
-			err = p.tg.SendPhotos(chatId, m, photos(tweet), telegram.MediaTypePhoto)
-			if err != nil {
-				return err
-			}
-			tweet.Media.Photos = nil
-			continue
-		}
-
-		if err := p.tg.SendMessage(chatId, m); err != nil {
-			return err
-		}
-		continue
-	}
-
 	return nil
 }
 
@@ -235,7 +232,7 @@ func chunkString(s string, chunkSize int) ([]string, error) {
 	return chunks, nil
 }
 
-func (p *processor) sendRandom(chatId int, username string) error {
+func (p *Processor) sendRandom(chatId int, username string) error {
 	n := rand.Intn(100)
 	if err := p.tg.SendMessage(chatId, fmt.Sprintf("random %d", n)); err != nil {
 		return err
@@ -244,7 +241,7 @@ func (p *processor) sendRandom(chatId int, username string) error {
 	return nil
 }
 
-func (p *processor) sendStats(id int, userId int) error {
+func (p *Processor) sendStats(id int, userId int) error {
 	isAdmin, err := p.users.IsAdmin(userId)
 	if err != nil {
 		return err
@@ -334,25 +331,25 @@ func parseCmd(text string) (commands.Cmd, error) {
 	return "", ErrorUnknownCommand
 }
 
-func photos(tweet tgTypes.Tweet) []tgTypes.MediaObject {
+func photos(tweet tgTypes.TweetContent) []tgTypes.MediaObject {
 	return tweet.Media.Photos
 }
 
-func videos(tweet tgTypes.Tweet) []tgTypes.MediaObject {
+func videos(tweet tgTypes.TweetContent) []tgTypes.MediaObject {
 	return tweet.Media.Videos
 }
 
-func video(tweet tgTypes.Tweet) tgTypes.MediaObject {
+func video(tweet tgTypes.TweetContent) tgTypes.MediaObject {
 	if len(tweet.Media.Videos) > 0 {
 		return tweet.Media.Videos[0]
 	}
 	return tgTypes.MediaObject{}
 }
 
-func (p *processor) sendStart(chatId int, username string) error {
+func (p *Processor) sendStart(chatId int, username string) error {
 	return p.tg.SendMessage(chatId, msgHello)
 }
 
-func (p *processor) sendHelp(chatId int, username string) error {
+func (p *Processor) sendHelp(chatId int, username string) error {
 	return p.tg.SendMessage(chatId, msgHelp)
 }

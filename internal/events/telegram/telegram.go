@@ -11,10 +11,10 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func New(tgClient *telegram.Client, twitterService TwitterService, users events.UsersServiceInterface) *processor {
+func New(tgClient *telegram.Client, twitterService TwitterService, users events.UsersServiceInterface) *Processor {
 	usersChan := make(chan string, 10)
 	usersShareTweet := make(chan string, 10)
-	return &processor{
+	return &Processor{
 		tg:              tgClient,
 		offset:          math.MaxInt64,
 		twitterService:  twitterService,
@@ -34,10 +34,10 @@ type Meta struct {
 }
 
 type TwitterService interface {
-	GetTweet(id string) (tgTypes.Tweet, error)
+	GetTweet(id string) (tgTypes.TweetThread, error)
 }
 
-type processor struct { //todo rename lol
+type Processor struct { //todo rename lol
 	tg              *telegram.Client
 	offset          int
 	twitterService  TwitterService
@@ -46,7 +46,7 @@ type processor struct { //todo rename lol
 	usersShareTweet chan string
 }
 
-func (p *processor) Fetch(limit int) ([]commands.Event, error) {
+func (p *Processor) Fetch(limit int) ([]commands.Event, error) {
 	updates, err := p.tg.Updates(p.offset, limit)
 
 	if err != nil {
@@ -68,7 +68,7 @@ func (p *processor) Fetch(limit int) ([]commands.Event, error) {
 	return res, nil
 }
 
-func (p *processor) Process(event commands.Event) error {
+func (p *Processor) Process(event commands.Event) error {
 	switch event.Type {
 	case commands.Message:
 		return p.processMessage(event)
@@ -78,7 +78,7 @@ func (p *processor) Process(event commands.Event) error {
 	return nil
 }
 
-func (p *processor) HandleUsers() {
+func (p *Processor) HandleUsers() {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go p.handleUsersShareTweet(&wg)
@@ -86,7 +86,7 @@ func (p *processor) HandleUsers() {
 	wg.Wait()
 }
 
-func (p *processor) handleUsers(wg *sync.WaitGroup) {
+func (p *Processor) handleUsers(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for user := range p.usersChan {
 		err := p.users.Add(context.TODO(), user)
@@ -96,7 +96,7 @@ func (p *processor) handleUsers(wg *sync.WaitGroup) {
 	}
 }
 
-func (p *processor) handleUsersShareTweet(wg *sync.WaitGroup) {
+func (p *Processor) handleUsersShareTweet(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for user := range p.usersShareTweet {
 		err := p.users.AddShare(context.TODO(), user)
@@ -106,12 +106,12 @@ func (p *processor) handleUsersShareTweet(wg *sync.WaitGroup) {
 	}
 }
 
-func (p *processor) Close() {
+func (p *Processor) Close() {
 	close(p.usersChan)
 	close(p.usersShareTweet)
 }
 
-func (p *processor) processMessage(e commands.Event) error {
+func (p *Processor) processMessage(e commands.Event) error {
 	meta, err := meta(e)
 	if err != nil {
 		return err

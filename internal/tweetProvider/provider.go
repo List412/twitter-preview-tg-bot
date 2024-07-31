@@ -10,30 +10,30 @@ import (
 )
 
 type GetTweetApi interface {
-	GetTweet(ctx context.Context, id string) (tgTypes.Tweet, error)
+	GetTweet(ctx context.Context, id string) (tgTypes.TweetThread, error)
 }
 
-func NewProvider() *provider {
-	return &provider{}
+func NewProvider() *Provider {
+	return &Provider{}
 }
 
-type provider struct {
+type Provider struct {
 	tweetApis map[string]GetTweetApi
 }
 
-func (p *provider) RegisterApi(name string, getTweetApi GetTweetApi) {
+func (p *Provider) RegisterApi(name string, getTweetApi GetTweetApi) {
 	if p.tweetApis == nil {
 		p.tweetApis = map[string]GetTweetApi{}
 	}
 	p.tweetApis[name] = getTweetApi
 }
 
-func (p *provider) GetTweet(id string) (tgTypes.Tweet, error) {
+func (p *Provider) GetTweet(id string) (tgTypes.TweetThread, error) {
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
-	resultChan := make(chan tgTypes.Tweet)
+	resultChan := make(chan tgTypes.TweetThread)
 	defer close(resultChan)
 	errChan := make(chan error, len(p.tweetApis))
 
@@ -62,21 +62,21 @@ func (p *provider) GetTweet(id string) (tgTypes.Tweet, error) {
 	case result := <-resultChan:
 		return result, nil
 	case <-allDone:
-		return tgTypes.Tweet{}, telegram.ErrApiResponse
+		return tgTypes.TweetThread{}, telegram.ErrApiResponse
 	}
 }
 
-func (p *provider) runApi(
+func (p *Provider) runApi(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	name string,
 	api GetTweetApi,
 	id string,
-	resultChan chan<- tgTypes.Tweet,
+	resultChan chan<- tgTypes.TweetThread,
 	errChan chan<- error,
 ) {
 	defer wg.Done()
-	rChan := make(chan tgTypes.Tweet)
+	rChan := make(chan tgTypes.TweetThread)
 	defer close(rChan)
 	doneChan := make(chan struct{})
 

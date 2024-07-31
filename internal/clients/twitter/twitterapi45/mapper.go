@@ -7,10 +7,11 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func Map(parsedTweet *Response) (tgTypes.Tweet, error) {
-	tweet := tgTypes.Tweet{}
+func Map(parsedTweet *Response) (tgTypes.TweetThread, error) {
+	tweet := tgTypes.TweetThread{}
+	tweetContent := tgTypes.TweetContent{}
 
-	tweet.Text = parsedTweet.Text
+	tweetContent.Text = parsedTweet.Text
 	tweet.Likes = parsedTweet.Likes
 	tweet.Quotes = parsedTweet.Quotes
 	tweet.Replies = parsedTweet.Replies
@@ -29,22 +30,23 @@ func Map(parsedTweet *Response) (tgTypes.Tweet, error) {
 		media := tgTypes.MediaObject{
 			Url: photo.MediaUrlHttps,
 		}
-		tweet.Media.Photos = append(tweet.Media.Photos, media)
+		tweetContent.Media.Photos = append(tweetContent.Media.Photos, media)
 	}
 
 	for i, video := range parsedTweet.Media.Video {
 		variant, err := getVideoFromVariants(video.Variants)
 		if err != nil {
-			return tgTypes.Tweet{}, err
+			return tgTypes.TweetThread{}, err
 		}
 		media := tgTypes.MediaObject{
 			Name:       variant.ContentType + "_" + strconv.Itoa(i),
 			Url:        variant.Url,
 			NeedUpload: true,
 		}
-		tweet.Media.Videos = append(tweet.Media.Videos, media)
+		tweetContent.Media.Videos = append(tweetContent.Media.Videos, media)
 	}
 
+	tweet.Tweets = append(tweet.Tweets, tweetContent)
 	return tweet, nil
 }
 

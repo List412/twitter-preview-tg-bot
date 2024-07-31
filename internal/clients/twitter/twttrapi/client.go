@@ -16,9 +16,9 @@ type Client struct {
 	rapidApi.Client
 }
 
-const getTweet = "get-tweet"
+const getTweet = "get-tweet-conversation"
 
-func (c *Client) GetTweet(ctx context.Context, id string) (*ParsedTweet, error) {
+func (c *Client) GetTweet(ctx context.Context, id string) (*ParsedThread, error) {
 	q := url.Values{}
 	q.Add("tweet_id", id)
 
@@ -29,7 +29,7 @@ func (c *Client) GetTweet(ctx context.Context, id string) (*ParsedTweet, error) 
 
 	log.Printf("GetTweet done %s", id)
 
-	var tweet ParsedTweet
+	var tweet ParsedThread
 	if err := json.Unmarshal(response, &tweet); err != nil {
 		return nil, err
 	}
