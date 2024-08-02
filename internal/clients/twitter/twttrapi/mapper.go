@@ -113,7 +113,8 @@ func getUserData(tweet *ParsedThread) UserData {
 }
 
 func getTweetData(tweet *ParsedThread) TweetData {
-	return *getMainTweet(tweet).Legacy
+	mainTweet := getMainTweet(tweet)
+	return *mainTweet.Legacy
 }
 
 func getViewsCount(tweet *ParsedThread) string {
@@ -121,13 +122,29 @@ func getViewsCount(tweet *ParsedThread) string {
 }
 
 func getMainTweet(tweet *ParsedThread) *Tweet {
-	return tweet.Data.TimelineResponse.Instructions[0].Entries[0].Content.Content.TweetResult.Result
+	mainTweet := tweet.Data.TimelineResponse.Instructions[0].Entries[0].Content.Content.TweetResult.Result
+	if mainTweet.Legacy == nil {
+		mainTweet = mainTweet.Tweet
+	}
+
+	return mainTweet
 }
 
 func getTweetFromEntity(entity Entity, index int) *Tweet {
 	if entity.Content.Content.TweetResult.Result != nil {
-		return entity.Content.Content.TweetResult.Result
+		tweet := entity.Content.Content.TweetResult.Result
+		if tweet.Legacy == nil {
+			tweet = tweet.Tweet
+		}
+
+		return tweet
 	}
+
+	tweet := entity.Content.Items[index].Item.Content.TweetResult.Result
+	if tweet.Legacy == nil {
+		tweet = tweet.Tweet
+	}
+
 	return entity.Content.Items[index].Item.Content.TweetResult.Result
 }
 
