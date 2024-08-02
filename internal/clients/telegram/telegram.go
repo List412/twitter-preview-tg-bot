@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"golang.org/x/time/rate"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -19,6 +20,7 @@ func NewClient(host string, token string) *Client {
 		host:     host,
 		basePath: basePath(token),
 		client:   http.Client{},
+		limiter:  rate.NewLimiter(5, 2),
 	}
 }
 
@@ -26,6 +28,7 @@ type Client struct {
 	host     string
 	basePath string
 	client   http.Client
+	limiter  *rate.Limiter
 }
 
 const getUpdates = "getUpdates"
@@ -144,6 +147,11 @@ func (c *Client) SendVideo(chatId int, text string, video tgTypes.MediaObject) e
 }
 
 func (c *Client) do(req *http.Request) ([]byte, error) {
+	err := c.limiter.Wait(req.Context())
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while making request")
