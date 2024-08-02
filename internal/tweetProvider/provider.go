@@ -83,12 +83,22 @@ func (p *Provider) runApi(
 	go func() {
 		log.Printf("%s start", name)
 		defer log.Printf("%s finish", name)
-		result, err := api.GetTweet(ctx, id)
-		if err != nil {
-			errChan <- errors.Wrapf(err, "api: %s", name)
-		} else {
-			rChan <- result
+
+		retry := 0
+		for {
+			result, err := api.GetTweet(ctx, id)
+			if err != nil {
+				retry++
+				if retry <= 3 {
+					continue
+				}
+				errChan <- errors.Wrapf(err, "api: %s", name)
+			} else {
+				rChan <- result
+			}
+			break
 		}
+
 		close(doneChan)
 	}()
 
