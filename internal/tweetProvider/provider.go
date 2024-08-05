@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"sync"
-	"tweets-tg-bot/internal/events/telegram"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -43,9 +42,11 @@ func (p *Provider) GetTweet(id string) (tgTypes.TweetThread, error) {
 		go p.runApi(ctx, wg, name, api, id, resultChan, errChan)
 	}
 
+	combinedErrorMessage := ""
 	go func() {
 		for err := range errChan {
 			log.Print(err.Error())
+			combinedErrorMessage += err.Error() + "\n"
 		}
 	}()
 
@@ -62,7 +63,7 @@ func (p *Provider) GetTweet(id string) (tgTypes.TweetThread, error) {
 	case result := <-resultChan:
 		return result, nil
 	case <-allDone:
-		return tgTypes.TweetThread{}, telegram.ErrApiResponse
+		return tgTypes.TweetThread{}, errors.New(combinedErrorMessage)
 	}
 }
 

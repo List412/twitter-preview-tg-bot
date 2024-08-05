@@ -3,7 +3,6 @@ package telegram
 import (
 	"context"
 	"fmt"
-	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/pkg/errors"
 	"log"
 	"math/rand"
@@ -25,6 +24,8 @@ var ErrorUnknownCommand = errors.New("unknown command")
 var ErrApiResponse = errors.New("api error")
 
 func (p *Processor) doCmd(text string, chatId int, username string, userId int) error {
+	defer p.recoverPanic(text, chatId, username)
+
 	text = strings.TrimSpace(text)
 
 	cmd, err := parseCmd(text)
@@ -45,8 +46,8 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 		if err != nil {
 			return nil
 		}
-		log.Printf("got new command: %s from: %s", text, username)
-		return p.sendTweet(chatId, id, username)
+		log.Printf("got new command: %s from: %s (%d)", text, username, userId)
+		return p.sendTweetOrAdminMessage(chatId, id, username)
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -107,36 +108,24 @@ func shortNumber(n int) string {
 	return str
 }
 
-func addInReplayTo(tweet *twitterscraper.Tweet) string {
-	result := fmt.Sprintf("\n———\n")
-	result += fmt.Sprintf("in reply to: %s:\n", tweet.Username)
-	result += fmt.Sprintf("%s\n\n", tweet.Text)
-	return result
-}
-
-func photoFromQuoted(tweets ...*twitterscraper.Tweet) []string {
-	var photos []string
-	for _, tweet := range tweets {
-		if tweet != nil && len(tweet.Photos) > 0 {
-			photos = append(photos, tweet.Photos...)
-		}
-	}
-	return photos
-}
-
 func timeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
 	log.Printf("%s took %s", name, elapsed)
+}
+
+func (p *Processor) sendTweetOrAdminMessage(chatId int, id string, username string) error {
+	err := p.sendTweet(chatId, id, username)
+	if err != nil {
+		p.sendErrorToAdmin(id, chatId, username, err)
+		return err
+	}
+	return nil
 }
 
 func (p *Processor) sendTweet(chatId int, id string, username string) error {
 	defer timeTrack(time.Now(), "sendTweet")
 
 	tweet, err := p.twitterService.GetTweet(id)
-	if errors.Is(err, ErrApiResponse) {
-		//_ = p.tg.SendMessage(chatId, "Sorry, having trouble getting this tweet for you")
-		_ = p.tg.SendMessage(p.users.GetAdminId(), "Твоя хуйня не работает")
-	}
 	if err != nil {
 		return err
 	}
