@@ -71,12 +71,12 @@ func (c *Client) SendMessage(chatId int, text string) error {
 
 // SendPhotos
 // send photos
-func (c *Client) SendPhotos(chatId int, text string, mediaUrls []tgTypes.MediaObject, mediaType mediaType) error {
+func (c *Client) SendPhotos(chatId int, text string, mediaUrls []MediaForEncoding) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
 
-	encodedMedia, err := encodedMediaObjects(mediaUrls, text, mediaType)
+	encodedMedia, err := encodedMediaObjects(mediaUrls, text)
 	if err != nil {
 		return err
 	}
@@ -90,20 +90,20 @@ func (c *Client) SendPhotos(chatId int, text string, mediaUrls []tgTypes.MediaOb
 	return nil
 }
 
-// SendVideos
-// send videos
-func (c *Client) SendVideos(chatId int, text string, mediaUrls []tgTypes.MediaObject, mediaType mediaType) error {
+// SendMedia
+// send photo/video
+func (c *Client) SendMedia(chatId int, text string, mediaUrls []MediaForEncoding, allMedia []tgTypes.MediaObject) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
 
-	encodedMedia, err := encodedMediaObjects(mediaUrls, text, mediaType)
+	encodedMedia, err := encodedMediaObjects(mediaUrls, text)
 	if err != nil {
 		return err
 	}
 	q.Add("media", encodedMedia)
 
-	_, err = c.postMultipart(sendMediaGroup, q, mediaUrls)
+	_, err = c.postMultipart(sendMediaGroup, q, allMedia)
 	if err != nil {
 		return err
 	}
@@ -226,24 +226,33 @@ type mediaType = string
 const MediaTypePhoto mediaType = "photo"
 const MediaTypeVideo mediaType = "video"
 
-func encodedMediaObjects(mediaUrls []tgTypes.MediaObject, text string, mediaType mediaType) (string, error) {
-	//mediaObjects := make([]MediaObject, len(mediaUrls))
+func encodedMediaObjects(mediaForEncoding []MediaForEncoding, text string) (string, error) {
 	var mediaObjects []MediaObject
-	for i, v := range mediaUrls {
-		mediaPath := v.Url
-		if v.NeedUpload {
-			mediaPath = fmt.Sprintf("attach://%s", v.Name)
+
+	for j, mediaForEncoding := range mediaForEncoding {
+		if len(mediaForEncoding.Media) == 0 {
+			continue
 		}
-		media := MediaObject{
-			Type:  mediaType,
-			Media: mediaPath,
+
+		mediaUrls := mediaForEncoding.Media
+		currentMediaType := mediaForEncoding.MediaType
+
+		for i, v := range mediaUrls {
+			mediaPath := v.Url
+			if v.NeedUpload || mediaForEncoding.ForceNeedUpload {
+				mediaPath = fmt.Sprintf("attach://%s", v.Name)
+			}
+			media := MediaObject{
+				Type:  currentMediaType,
+				Media: mediaPath,
+			}
+			if i == 0 && j == 0 {
+				media.Caption = text
+				media.ParseMode = "HTML"
+			}
+
+			mediaObjects = append(mediaObjects, media)
 		}
-		if i == 0 {
-			media.Caption = text
-			media.ParseMode = "HTML"
-		}
-		//mediaObjects[i] = media
-		mediaObjects = append(mediaObjects, media)
 	}
 
 	encoded, err := json.Marshal(mediaObjects)

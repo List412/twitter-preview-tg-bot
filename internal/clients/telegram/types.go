@@ -1,5 +1,7 @@
 package telegram
 
+import "tweets-tg-bot/internal/events/telegram/tgTypes"
+
 type UpdateResponse struct {
 	Ok     bool     `json:"ok"`
 	Result []Update `json:"result"`
@@ -30,6 +32,12 @@ type MediaObject struct {
 	Media     string `json:"media"`
 	Caption   string `json:"caption,omitempty"`
 	ParseMode string `json:"parse_mode,omitempty"`
+}
+
+type MediaForEncoding struct {
+	Media           []tgTypes.MediaObject
+	MediaType       string
+	ForceNeedUpload bool
 }
 
 type Button struct {

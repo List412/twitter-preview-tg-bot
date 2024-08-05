@@ -88,7 +88,10 @@ func getMedia(tweet TweetData) (tgTypes.Media, error) {
 	for _, media := range tweet.ExtendedEntities.Media {
 		switch media.Type {
 		case "photo":
-			result.Photos = append(result.Photos, tgTypes.MediaObject{Url: media.MediaUrlHttps})
+			result.Photos = append(result.Photos, tgTypes.MediaObject{
+				Url:  media.MediaUrlHttps,
+				Name: media.MediaKey,
+			})
 		case "animated_gif":
 			fallthrough
 		case "video":

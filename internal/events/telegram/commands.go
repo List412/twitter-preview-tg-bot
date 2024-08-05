@@ -149,22 +149,46 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 			message = generateHeader(tweet) + message
 		}
 
-		if len(tweet.Tweets[i].Media.Videos) >= 2 {
-			downloaded, err := downloader.Download(tweet.Tweets[i].Media.Videos)
-			if err != nil {
-				return err
-			}
-			tweet.Tweets[i].Media.Videos = downloaded
-		}
-
 		messages, err := chunkString(message, 1024)
 		if err != nil {
 			return err
 		}
 
 		for _, m := range messages {
-			if len(tweet.Tweets[i].Media.Videos) >= 2 {
-				err = p.tg.SendVideos(chatId, m, tweet.Tweets[i].Media.Videos, telegram.MediaTypeVideo)
+			if len(tweet.Tweets[i].Media.Videos) >= 2 ||
+				(len(tweet.Tweets[i].Media.Videos) == 1 && len(tweet.Tweets[i].Media.Photos) >= 1) {
+
+				var mediasForEncoding []telegram.MediaForEncoding
+				if len(tweet.Tweets[i].Media.Photos) > 0 {
+					downloadedPhotos, err := downloader.Download(tweet.Tweets[i].Media.Photos)
+					if err != nil {
+						return err
+					}
+					tweet.Tweets[i].Media.Photos = downloadedPhotos
+
+					mediasForEncoding = append(mediasForEncoding, telegram.MediaForEncoding{
+						Media:           tweet.Tweets[i].Media.Photos,
+						MediaType:       telegram.MediaTypePhoto,
+						ForceNeedUpload: true,
+					})
+				}
+
+				if len(tweet.Tweets[i].Media.Videos) > 0 {
+					downloadedVideos, err := downloader.Download(tweet.Tweets[i].Media.Videos)
+					if err != nil {
+						return err
+					}
+					tweet.Tweets[i].Media.Videos = downloadedVideos
+
+					mediasForEncoding = append(mediasForEncoding, telegram.MediaForEncoding{
+						Media:     tweet.Tweets[i].Media.Videos,
+						MediaType: telegram.MediaTypeVideo,
+					})
+				}
+
+				allMedia := append(tweet.Tweets[i].Media.Videos, tweet.Tweets[i].Media.Photos...)
+
+				err = p.tg.SendMedia(chatId, m, mediasForEncoding, allMedia)
 				if err != nil {
 					return err
 				}
@@ -173,7 +197,21 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 			}
 
 			if len(tweet.Tweets[i].Media.Videos) == 1 {
-				err = p.tg.SendVideo(chatId, m, video(tw))
+				downloadedVideos, err := downloader.Download(tweet.Tweets[i].Media.Videos)
+				if err != nil {
+					return err
+				}
+				tweet.Tweets[i].Media.Videos = downloadedVideos
+
+				mediasForEncoding := []telegram.MediaForEncoding{
+					{
+						Media:     tweet.Tweets[i].Media.Videos,
+						MediaType: telegram.MediaTypeVideo,
+					},
+				}
+
+				//err = p.tg.SendVideo(chatId, m, video(tw))
+				err = p.tg.SendMedia(chatId, m, mediasForEncoding, tweet.Tweets[i].Media.Videos)
 				if err != nil {
 					return errors.Wrap(err, "SendVideo error")
 				}
@@ -191,7 +229,14 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 			}
 
 			if len(tweet.Tweets[i].Media.Photos) >= 2 {
-				err = p.tg.SendPhotos(chatId, m, photos(tw), telegram.MediaTypePhoto)
+				mediaForEncoding := []telegram.MediaForEncoding{
+					{
+						Media:     photos(tw),
+						MediaType: telegram.MediaTypePhoto,
+					},
+				}
+
+				err = p.tg.SendPhotos(chatId, m, mediaForEncoding)
 				if err != nil {
 					return err
 				}
