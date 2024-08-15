@@ -18,7 +18,7 @@ func (s Service) GetTweet(ctx context.Context, id string) (tgTypes.TweetThread, 
 	if err != nil {
 		return tgTypes.TweetThread{}, err
 	}
-	tweet, err := Map(response)
+	tweet, err := Map(response, id)
 	if err != nil {
 		return tgTypes.TweetThread{}, err
 	}

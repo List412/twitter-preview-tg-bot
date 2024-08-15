@@ -9,14 +9,19 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func Map(parsedTweet *ParsedThread) (tgTypes.TweetThread, error) {
+func Map(parsedTweet *ParsedThread, id string) (tgTypes.TweetThread, error) {
 	if parsedTweet.Errors != nil || parsedTweet.Error != nil {
 		return tgTypes.TweetThread{}, telegram.ErrApiResponse
 	}
 
 	tweet := tgTypes.TweetThread{}
 
-	tweetResult := getTweetData(parsedTweet)
+	currentEntry, entryId, err := getCurrentEntry(parsedTweet, id)
+	if err != nil {
+		return tgTypes.TweetThread{}, err
+	}
+
+	tweetResult := getTweetData(currentEntry)
 
 	tweetTime, err := time.Parse("Mon Jan 02 15:04:05 -0700 2006", tweetResult.CreatedAt)
 	if err != nil {
@@ -27,14 +32,14 @@ func Map(parsedTweet *ParsedThread) (tgTypes.TweetThread, error) {
 	tweet.Quotes = tweetResult.QuoteCount
 	tweet.Retweets = tweetResult.RetweetCount
 	tweet.Replies = tweetResult.ReplyCount
-	tweet.Views = getViewsCount(parsedTweet)
+	tweet.Views = getViewsCount(currentEntry)
 
-	userResult := getUserData(parsedTweet)
+	userResult := getUserData(currentEntry)
 	tweet.UserName = userResult.Name
 	tweet.UserId = userResult.ScreenName
 
 	entries := getEntries(parsedTweet)
-	content, err := parseEntries(entries)
+	content, err := parseEntries(entries, entryId)
 	if err != nil {
 		return tgTypes.TweetThread{}, errors.Wrap(err, "error parsing entries")
 	}
@@ -44,10 +49,10 @@ func Map(parsedTweet *ParsedThread) (tgTypes.TweetThread, error) {
 	return tweet, nil
 }
 
-func parseEntries(entries []Entity) ([]tgTypes.TweetContent, error) {
+func parseEntries(entries []Entity, entryId int) ([]tgTypes.TweetContent, error) {
 	var results []tgTypes.TweetContent
 	for i, entry := range entries {
-		if i == 0 || entry.Content.Content.TweetDisplayType == "SelfThread" {
+		if i == entryId || entry.Content.Content.TweetDisplayType == "SelfThread" {
 			tweetContent := tgTypes.TweetContent{}
 			tweet := getTweetFromEntity(entry, i)
 			media, err := getMedia(*tweet.Legacy)
@@ -111,21 +116,32 @@ func getEntries(tweet *ParsedThread) []Entity {
 	return tweet.Data.TimelineResponse.Instructions[0].Entries
 }
 
-func getUserData(tweet *ParsedThread) UserData {
-	return getMainTweet(tweet).Core.UserResult.Result.Legacy
+func getUserData(entry Entity) UserData {
+	return getMainTweet(entry).Core.UserResult.Result.Legacy
 }
 
-func getTweetData(tweet *ParsedThread) TweetData {
-	mainTweet := getMainTweet(tweet)
+func getCurrentEntry(tweet *ParsedThread, id string) (Entity, int, error) {
+	entryId := "tweet-" + id
+
+	for i, entry := range getEntries(tweet) {
+		if entryId == entry.EntryId {
+			return entry, i, nil
+		}
+	}
+	return Entity{}, 0, errors.New("no entry with provided id")
+}
+
+func getTweetData(entry Entity) TweetData {
+	mainTweet := getMainTweet(entry)
 	return *mainTweet.Legacy
 }
 
-func getViewsCount(tweet *ParsedThread) string {
-	return getMainTweet(tweet).ViewCountInfo.Count
+func getViewsCount(entry Entity) string {
+	return getMainTweet(entry).ViewCountInfo.Count
 }
 
-func getMainTweet(tweet *ParsedThread) *Tweet {
-	mainTweet := tweet.Data.TimelineResponse.Instructions[0].Entries[0].Content.Content.TweetResult.Result
+func getMainTweet(entry Entity) *Tweet {
+	mainTweet := entry.Content.Content.TweetResult.Result
 	if mainTweet.Legacy == nil {
 		mainTweet = mainTweet.Tweet
 	}
