@@ -163,7 +163,7 @@ func (c *Client) do(req *http.Request) ([]byte, error) {
 		return nil, errors.Wrapf(err, "error while reading response body")
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, errors.New(string(body))
+		return nil, c.parseError(body)
 	}
 	return body, nil
 }

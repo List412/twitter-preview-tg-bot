@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"html"
 	"log"
 	"math/rand"
 	"net/url"
@@ -47,7 +48,7 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 			return nil
 		}
 		log.Printf("got new command: %s from: %s (%d)", text, username, userId)
-		return p.sendTweetOrAdminMessage(chatId, id, username)
+		return p.sendTweetOrHandleError(chatId, id, username)
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -113,8 +114,14 @@ func timeTrack(start time.Time, name string) {
 	log.Printf("%s took %s", name, elapsed)
 }
 
-func (p *Processor) sendTweetOrAdminMessage(chatId int, id string, username string) error {
+func (p *Processor) sendTweetOrHandleError(chatId int, id string, username string) error {
 	err := p.sendTweet(chatId, id, username)
+	if errors.Is(err, telegram.ErrNoEnoughRightToSendPhoto) {
+		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided tweet. Please allow sending photos in the chat settings.</i>")
+	}
+	if errors.Is(err, telegram.ErrNoEnoughRightToSendVideo) {
+		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided tweet. Please allow sending video in the chat settings.</i>")
+	}
 	if err != nil {
 		p.sendErrorToAdmin(id, chatId, username, err)
 		return err
@@ -132,7 +139,7 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 
 	for i, tw := range tweet.Tweets {
 
-		message := generateText(tw)
+		message := html.EscapeString(generateText(tw))
 
 		if i == 0 {
 			message = generateHeader(tweet) + message
