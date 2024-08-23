@@ -2,6 +2,7 @@ package tweetProvider
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"log"
 	"sync"
@@ -81,27 +82,7 @@ func (p *Provider) runApi(
 	defer close(rChan)
 	doneChan := make(chan struct{})
 
-	go func() {
-		log.Printf("%s start", name)
-		defer log.Printf("%s finish", name)
-
-		retry := 0
-		for {
-			result, err := api.GetTweet(ctx, id)
-			if err != nil {
-				retry++
-				if retry <= 3 {
-					continue
-				}
-				errChan <- errors.Wrapf(err, "api: %s", name)
-			} else {
-				rChan <- result
-			}
-			break
-		}
-
-		close(doneChan)
-	}()
+	go p.runGetTweet(ctx, name, api, id, rChan, errChan, doneChan)
 
 	select {
 	case <-ctx.Done():
@@ -110,5 +91,41 @@ func (p *Provider) runApi(
 		resultChan <- result
 	case <-doneChan:
 		return
+	}
+}
+
+func (p *Provider) runGetTweet(
+	ctx context.Context,
+	name string,
+	api GetTweetApi,
+	id string,
+	rChan chan<- tgTypes.TweetThread,
+	errChan chan<- error,
+	doneChan chan<- struct{},
+) {
+	defer recoverPanic(name, errChan)
+	defer close(doneChan)
+	log.Printf("%s start", name)
+	defer log.Printf("%s finish", name)
+
+	retry := 0
+	for {
+		result, err := api.GetTweet(ctx, id)
+		if err != nil {
+			retry++
+			if retry <= 3 {
+				continue
+			}
+			errChan <- errors.Wrapf(err, "api: %s", name)
+		} else {
+			rChan <- result
+		}
+		break
+	}
+}
+
+func recoverPanic(name string, errChan chan<- error) {
+	if r := recover(); r != nil {
+		errChan <- errors.New(fmt.Sprintf("api %s: %v", name, r))
 	}
 }
