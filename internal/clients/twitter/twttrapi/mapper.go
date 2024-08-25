@@ -52,7 +52,7 @@ func Map(parsedTweet *ParsedThread, id string) (tgTypes.TweetThread, error) {
 func parseEntries(entries []Entity, entryId int) ([]tgTypes.TweetContent, error) {
 	var results []tgTypes.TweetContent
 	for i, entry := range entries {
-		if i == entryId || entry.Content.Content.TweetDisplayType == "SelfThread" {
+		if i == entryId || (entry.Content.Content.TweetDisplayType == "SelfThread" && entryId == 0) {
 			tweetContent := tgTypes.TweetContent{}
 			tweet := getTweetFromEntity(entry, i)
 			media, err := getMedia(*tweet.Legacy)
@@ -67,7 +67,7 @@ func parseEntries(entries []Entity, entryId int) ([]tgTypes.TweetContent, error)
 			results = append(results, tweetContent)
 		}
 
-		if len(entry.Content.Items) > 0 && entry.Content.Items[0].Item.Content.TweetDisplayType == "SelfThread" {
+		if len(entry.Content.Items) > 0 && entry.Content.Items[0].Item.Content.TweetDisplayType == "SelfThread" && entryId == 0 {
 			for itemIndex, _ := range entry.Content.Items {
 				tweetContent := tgTypes.TweetContent{}
 				tweet := getTweetFromEntity(entry, itemIndex)
