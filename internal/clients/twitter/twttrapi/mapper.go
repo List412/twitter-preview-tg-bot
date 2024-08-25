@@ -46,6 +46,11 @@ func Map(parsedTweet *ParsedThread, id string) (tgTypes.TweetThread, error) {
 
 	tweet.Tweets = content
 
+	userNote := getMainTweet(currentEntry).BirdwatchPivot
+	if userNote != nil {
+		tweet.UserNote = tgTypes.UserNote{Text: userNote.Note.Summary.Text, Title: userNote.Shorttitle}
+	}
+
 	return tweet, nil
 }
 

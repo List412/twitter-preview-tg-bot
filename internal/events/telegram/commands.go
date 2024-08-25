@@ -87,6 +87,10 @@ func generateHeader(tweet tgTypes.TweetThread) string {
 		shortNumber(tweet.Likes),
 	)
 
+	if tweet.UserNote.Text != "" {
+		result += fmt.Sprintf("<span class=\"tg-spoiler\"><b>%s:</b>\n<i>%s</i>\n\n</span>", tweet.UserNote.Title, tweet.UserNote.Text)
+	}
+
 	return result
 }
 

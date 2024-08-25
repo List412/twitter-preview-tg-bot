@@ -32,6 +32,11 @@ type TweetContent struct {
 	Media Media
 }
 
+type UserNote struct {
+	Text  string
+	Title string
+}
+
 type TweetThread struct {
 	UserName string
 	UserId   string
@@ -42,4 +47,5 @@ type TweetThread struct {
 	Views    string
 	Replies  int
 	Tweets   []TweetContent
+	UserNote UserNote
 }
