@@ -46,6 +46,10 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 		return p.sendTweetOrHandleError(chatId, parsed, username)
 	case commands.TikTokCmd:
 		log.Printf("got new tiktok command: %s from: %s (%d)", text, username, userId)
+		if chatId != -1001441929255 {
+			log.Printf("chat not in test group")
+			return nil
+		}
 		return p.sendTikTokOrHandleError(chatId, parsed, username)
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
