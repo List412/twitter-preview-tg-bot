@@ -7,7 +7,6 @@ import (
 	"html"
 	"log"
 	"math/rand"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -29,7 +28,7 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 
 	text = strings.TrimSpace(text)
 
-	cmd, err := parseCmd(text)
+	cmd, parsed, err := p.parseCmd(text)
 	if errors.Is(err, ErrorUnknownCommand) {
 		return nil
 	}
@@ -43,12 +42,11 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 
 	switch cmd {
 	case commands.TweetCmd:
-		id, err := parseTweeterUrl(text)
-		if err != nil {
-			return nil
-		}
-		log.Printf("got new command: %s from: %s (%d)", text, username, userId)
-		return p.sendTweetOrHandleError(chatId, id, username)
+		log.Printf("got new tweet command: %s from: %s (%d)", text, username, userId)
+		return p.sendTweetOrHandleError(chatId, parsed, username)
+	case commands.TikTokCmd:
+		log.Printf("got new tiktok command: %s from: %s (%d)", text, username, userId)
+		return p.sendTikTokOrHandleError(chatId, parsed, username)
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -133,14 +131,15 @@ func (p *Processor) sendTweetOrHandleError(chatId int, id string, username strin
 	return nil
 }
 
-func (p *Processor) sendTweet(chatId int, id string, username string) error {
-	defer timeTrack(time.Now(), "sendTweet")
-
-	tweet, err := p.twitterService.GetTweet(id)
+func (p *Processor) sendTikTokOrHandleError(chatId int, id string, username string) error {
+	err := p.sendTikTok(chatId, id, username)
 	if err != nil {
-		return err
+		p.sendErrorToAdmin(id, chatId, username, err)
 	}
+	return err
+}
 
+func (p *Processor) sendTweetAsMessage(chatId int, tweet tgTypes.TweetThread) error {
 	for i, tw := range tweet.Tweets {
 
 		message := html.EscapeString(generateText(tw))
@@ -253,6 +252,35 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 	return nil
 }
 
+func (p *Processor) sendTweet(chatId int, id string, username string) error {
+	defer timeTrack(time.Now(), "sendTweet")
+
+	tweet, err := p.twitterService.GetTweet(id)
+	if err != nil {
+		return err
+	}
+
+	err = p.sendTweetAsMessage(chatId, tweet)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *Processor) sendTikTok(chatId int, id string, username string) error {
+	tweet, err := p.tikTokService.GetVideo(context.TODO(), id)
+	if err != nil {
+		return err
+	}
+
+	err = p.sendTweetAsMessage(chatId, tweet)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func chunkString(s string, chunkSize int) ([]string, error) {
 	//regex, err := regexp.Compile(".{1,25}\\b|.{1,25}")
 	//if err != nil {
@@ -324,41 +352,10 @@ func (p *Processor) sendStats(id int, userId int) error {
 	return nil
 }
 
-func parseTweeterUrl(text string) (string, error) {
-	u, err := url.Parse(text)
-
-	twitterHosts := []string{"twitter.com", "x.com"}
-
-	if err != nil {
-		return "", err
-	}
-
-	isTwitterUrl := false
-	for _, h := range twitterHosts {
-		if h == u.Host {
-			isTwitterUrl = true
-			break
-		}
-	}
-
-	if !isTwitterUrl {
-		return "", errors.New("not a twitter url")
-	}
-
-	path := strings.Split(strings.TrimLeft(u.Path, "/"), "/")
-	if len(path) != 3 {
-		return "", errors.New("url don't have id")
-	}
-
-	if path[2] == "" {
-		return "", errors.New("id in url empty")
-	}
-	return path[2], nil
-}
-
-func parseCmd(text string) (commands.Cmd, error) {
-	if _, err := parseTweeterUrl(text); err == nil {
-		return commands.TweetCmd, nil
+func (p *Processor) parseCmd(text string) (commands.Cmd, string, error) {
+	cmd, parsed, err := p.cmdParser.Parse(text)
+	if err == nil {
+		return cmd, parsed, err
 	}
 
 	for _, cmd := range AllCommands {
@@ -369,11 +366,11 @@ func parseCmd(text string) (commands.Cmd, error) {
 		cmdPart := text[:len(cmd)]
 
 		if string(cmd) == cmdPart {
-			return cmd, nil
+			return cmd, "", nil
 		}
 	}
 
-	return "", ErrorUnknownCommand
+	return "", "", ErrorUnknownCommand
 }
 
 func photos(tweet tgTypes.TweetContent) []tgTypes.MediaObject {

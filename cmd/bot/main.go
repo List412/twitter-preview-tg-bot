@@ -16,12 +16,16 @@ import (
 	"regexp"
 	"syscall"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
+	"tweets-tg-bot/internal/clients/tiktok/tiktok89"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/dbConn"
 	"tweets-tg-bot/internal/events/consumer/event-consumer"
 	"tweets-tg-bot/internal/events/telegram"
 	metrics2 "tweets-tg-bot/internal/metrics"
+	"tweets-tg-bot/internal/site/tiktok"
+	"tweets-tg-bot/internal/site/twitter"
 	repository2 "tweets-tg-bot/internal/storage/share/repository"
 	"tweets-tg-bot/internal/storage/users/repository"
 	"tweets-tg-bot/internal/storage/users/service"
@@ -93,9 +97,21 @@ func main() {
 	twitterService.RegisterApi("twttrapi", twttrapi.NewService(twttrapiClient))
 	//twitterService.RegisterApi("twitter-api45", twitterapi45.NewService(twitterApi45Client))
 
+	twitterCmdParser := twitter.CommandParser{}
+	tiktokCmdParser := tiktok.CommandParser{}
+
+	cmdParser := commands.Parsers{}
+	cmdParser.RegisterParser(commands.TweetCmd, twitterCmdParser)
+	cmdParser.RegisterParser(commands.TikTokCmd, tiktokCmdParser)
+
+	tiktokClient := tiktok89.NewClient(cfg.TikTok89.Host, cfg.RapidApi.Token)
+	tiktokService := tiktok89.NewService(tiktokClient)
+
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
 		twitterService,
+		tiktokService,
+		cmdParser,
 		usersServ,
 	)
 

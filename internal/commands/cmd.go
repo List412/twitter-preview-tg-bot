@@ -21,5 +21,6 @@ const (
 )
 
 const TweetCmd Cmd = "tweet"
+const TikTokCmd Cmd = "tiktok"
 
 type Cmd string

@@ -23,16 +23,18 @@ func NewConfig() (*Config, error) {
 }
 
 type Config struct {
-	Telegram     Telegram
-	Tweeter      Tweeter
-	Storage      Storage
-	Consumer     Consumer
-	Db           Db
-	Admin        Admin
-	Prometheus   Prometheus
-	Twttrapi     Twttrapi
-	TwitterApi45 TwitterApi45
-	RapidApi     RapidApi
+	Telegram       Telegram
+	Tweeter        Tweeter
+	Storage        Storage
+	Consumer       Consumer
+	Db             Db
+	Admin          Admin
+	Prometheus     Prometheus
+	Twttrapi       Twttrapi
+	TwitterApi45   TwitterApi45
+	TikTokScraper2 TikTokScraper2
+	TikTok89       TikTok89
+	RapidApi       RapidApi
 }
 
 type Prometheus struct {
@@ -55,6 +57,14 @@ type Twttrapi struct {
 
 type TwitterApi45 struct {
 	Host string `env:"TWITTERAPI45_HOST"`
+}
+
+type TikTokScraper2 struct {
+	Host string `env:"TIKTOK_SCRAPPER2_HOST"`
+}
+
+type TikTok89 struct {
+	Host string `env:"TIKTOK89_HOST"`
 }
 
 type RapidApi struct {
