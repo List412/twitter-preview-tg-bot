@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/pkg/errors"
+
 type Parser interface {
 	Parse(text string) (string, error)
 }
@@ -16,7 +18,7 @@ func (p *Parsers) Parse(text string) (Cmd, string, error) {
 		}
 		return cmd, parsed, nil
 	}
-	return "", "", nil
+	return "", "", errors.New("parser not found")
 }
 
 func (p *Parsers) RegisterParser(cmd Cmd, parser Parser) {
