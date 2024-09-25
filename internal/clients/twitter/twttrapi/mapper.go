@@ -169,7 +169,7 @@ func getTweetFromEntity(entity Entity, index int) *Tweet {
 		tweet = tweet.Tweet
 	}
 
-	return entity.Content.Items[index].Item.Content.TweetResult.Result
+	return tweet
 }
 
 func getResultFromTweet(tw *Tweet) *TweetData {
