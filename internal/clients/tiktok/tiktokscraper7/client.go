@@ -1,4 +1,4 @@
-package tiktok89
+package tiktokscraper7
 
 import (
 	"context"
@@ -17,11 +17,12 @@ type Client struct {
 	rapidApi.Client
 }
 
-const getVideo = "tiktok"
+const getVideo = ""
 
 func (c *Client) GetVideo(ctx context.Context, id string) (*VideoParsed, error) {
 	q := url.Values{}
-	q.Add("link", id)
+	q.Add("url", id)
+	q.Add("hd", "1")
 
 	response, err := c.DoRequest(ctx, getVideo, q)
 	if err != nil {
@@ -35,8 +36,8 @@ func (c *Client) GetVideo(ctx context.Context, id string) (*VideoParsed, error) 
 		return nil, err
 	}
 
-	if !video.Ok {
-		return nil, errors.New(video.ErrorMessage)
+	if video.Code != 0 {
+		return nil, errors.New(video.Msg)
 	}
 
 	return &video, nil

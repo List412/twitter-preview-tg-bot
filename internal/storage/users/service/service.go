@@ -106,7 +106,7 @@ func (s service) CountShare(ctx context.Context) (int, error) {
 }
 
 func (s service) CommandsStat(ctx context.Context) (map[string]int, error) {
-	commandsToSend := []string{string(commands.TweetCmd), string(commands.HelpCmd), string(commands.StartCmd)}
+	commandsToSend := []string{string(commands.TweetCmd), string(commands.TikTokCmd), string(commands.HelpCmd), string(commands.StartCmd)}
 	result := make(map[string]int, len(commandsToSend))
 	for _, c := range commandsToSend {
 		counter, err := s.metrics.GetCmdStats(ctx, c)

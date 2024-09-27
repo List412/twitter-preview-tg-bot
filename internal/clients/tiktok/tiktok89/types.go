@@ -1,8 +1,9 @@
 package tiktok89
 
 type VideoParsed struct {
-	Ok     bool `json:"ok"`
-	Author struct {
+	Ok           bool   `json:"ok"`
+	ErrorMessage string `json:"errorMessage"`
+	Author       struct {
 		CreateTime               int    `json:"create_time"`
 		CustomVerify             string `json:"custom_verify"`
 		CvLevel                  string `json:"cv_level"`

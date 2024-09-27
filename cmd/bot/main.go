@@ -16,7 +16,9 @@ import (
 	"regexp"
 	"syscall"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
+	tiktok2 "tweets-tg-bot/internal/clients/tiktok"
 	"tweets-tg-bot/internal/clients/tiktok/tiktok89"
+	"tweets-tg-bot/internal/clients/tiktok/tiktokscraper7"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
@@ -107,10 +109,16 @@ func main() {
 	tiktokClient := tiktok89.NewClient(cfg.TikTok89.Host, cfg.RapidApi.Token)
 	tiktokService := tiktok89.NewService(tiktokClient)
 
+	tiktok7Client := tiktokscraper7.NewClient(cfg.TikTokScrapper7.Host, cfg.RapidApi.Token)
+	tiktok7Service := tiktokscraper7.NewService(tiktok7Client)
+
+	ttService := tiktok2.NewService()
+	ttService.RegisterApi(tiktokService, tiktok7Service)
+
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
 		twitterService,
-		tiktokService,
+		ttService,
 		cmdParser,
 		usersServ,
 	)

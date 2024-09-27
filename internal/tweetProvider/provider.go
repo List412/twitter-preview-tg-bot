@@ -62,6 +62,7 @@ func (p *Provider) GetTweet(id string) (tgTypes.TweetThread, error) {
 
 	select {
 	case result := <-resultChan:
+		result.Source = "twitter"
 		return result, nil
 	case <-allDone:
 		return tgTypes.TweetThread{}, errors.New(combinedErrorMessage)

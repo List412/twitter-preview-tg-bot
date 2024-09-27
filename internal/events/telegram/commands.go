@@ -42,15 +42,15 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 
 	switch cmd {
 	case commands.TweetCmd:
-		log.Printf("got new tweet command: %s from: %s (%d)", text, username, userId)
+		log.Printf("got new tweet command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
 		return p.sendTweetOrHandleError(chatId, parsed, username)
 	case commands.TikTokCmd:
-		log.Printf("got new tiktok command: %s from: %s (%d)", text, username, userId)
-		if chatId != -1001441929255 {
-			log.Printf("chat not in test group")
-			return nil
+		log.Printf("got new tiktok command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
+		if chatId == -4020168327 || chatId == -1001441929255 || userId == 114927545 {
+			return p.sendTikTokOrHandleError(chatId, parsed, username)
 		}
-		return p.sendTikTokOrHandleError(chatId, parsed, username)
+		log.Printf("chat not in test group")
+		return nil
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -67,7 +67,12 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 func generateHeader(tweet tgTypes.TweetThread) string {
 	result := ""
 
-	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) tweeted:\n", tweet.UserName, tweet.UserId)
+	action := "tweeted"
+	if tweet.Source != "twitter" {
+		action = "posted"
+	}
+
+	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) %s:\n", tweet.UserName, tweet.UserId, action)
 
 	twTime := tweet.Time.Format("15:04 · 2 Jan 2006")
 
