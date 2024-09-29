@@ -112,6 +112,7 @@ func (p *Provider) runGetTweet(
 
 	retry := 0
 	for {
+		log.Printf("%s attempt #%d id %s", name, retry, id)
 		result, err := api.GetTweet(ctx, id)
 		if err != nil {
 			retry++
