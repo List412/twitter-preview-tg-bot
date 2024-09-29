@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"log"
+	"runtime/debug"
 	"sync"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
@@ -127,6 +128,6 @@ func (p *Provider) runGetTweet(
 
 func recoverPanic(name string, errChan chan<- error) {
 	if r := recover(); r != nil {
-		errChan <- errors.New(fmt.Sprintf("api %s: %v", name, r))
+		errChan <- errors.New(fmt.Sprintf("api %s: %+v; stack: %s", name, r, debug.Stack()))
 	}
 }

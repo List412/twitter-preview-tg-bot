@@ -2,8 +2,10 @@ package tiktok
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"log"
+	"runtime/debug"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -40,7 +42,7 @@ func (s *Service) getVideoOrError(ctx context.Context, api Api, id string) (twee
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = r.(error)
+			err = errors.Wrap(r.(error), fmt.Sprintf("%s\n", debug.Stack()))
 		}
 	}()
 
