@@ -25,7 +25,7 @@ func (s *Service) RegisterApi(api ...Api) {
 
 func (s *Service) GetVideo(ctx context.Context, id string) (tgTypes.TweetThread, error) {
 	for _, api := range s.apis {
-		result, err := api.GetVideo(ctx, id)
+		result, err := s.getVideoOrError(ctx, api, id)
 		if err != nil {
 			log.Println("GetVideo", err)
 			continue
@@ -34,4 +34,15 @@ func (s *Service) GetVideo(ctx context.Context, id string) (tgTypes.TweetThread,
 		return result, nil
 	}
 	return tgTypes.TweetThread{}, errors.New("failed to retrieve video")
+}
+
+func (s *Service) getVideoOrError(ctx context.Context, api Api, id string) (tweet tgTypes.TweetThread, err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = r.(error)
+		}
+	}()
+
+	return api.GetVideo(ctx, id)
 }
