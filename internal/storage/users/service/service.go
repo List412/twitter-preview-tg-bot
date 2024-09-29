@@ -23,18 +23,18 @@ type MetricHandler interface {
 	GetCmdStats(ctx context.Context, command string) (prometheus.Counter, error)
 }
 
-func New(repository Repository, shareRepo Repository, metrics MetricHandler, cfg config.Admin) *service {
-	return &service{users: repository, usersShare: shareRepo, metrics: metrics, cfg: cfg}
+func New(repository Repository, shareRepo Repository, metrics MetricHandler, cfg config.Admin) *Service {
+	return &Service{users: repository, usersShare: shareRepo, metrics: metrics, cfg: cfg}
 }
 
-type service struct {
+type Service struct {
 	users      Repository
 	usersShare Repository
 	metrics    MetricHandler
 	cfg        config.Admin
 }
 
-func (s service) Command(cmd commands.Cmd, userName string) {
+func (s Service) Command(cmd commands.Cmd, userName string) {
 	ctx := context.TODO()
 	switch cmd {
 	case commands.TweetCmd:
@@ -52,12 +52,12 @@ func (s service) Command(cmd commands.Cmd, userName string) {
 	s.metrics.HandleCmd(ctx, cmd)
 }
 
-func (s service) IsExist(ctx context.Context, userName string) bool {
+func (s Service) IsExist(ctx context.Context, userName string) bool {
 	exist, _ := s.users.IsExist(ctx, userName)
 	return exist
 }
 
-func (s service) Add(ctx context.Context, userName string) error {
+func (s Service) Add(ctx context.Context, userName string) error {
 	if !s.IsExist(ctx, userName) {
 		err := s.users.Add(ctx, userName)
 		if err != nil {
@@ -67,7 +67,7 @@ func (s service) Add(ctx context.Context, userName string) error {
 	return nil
 }
 
-func (s service) AddShare(ctx context.Context, userName string) error {
+func (s Service) AddShare(ctx context.Context, userName string) error {
 	exist, _ := s.usersShare.IsExist(ctx, userName)
 	if !exist {
 		err := s.usersShare.Add(ctx, userName)
@@ -78,18 +78,18 @@ func (s service) AddShare(ctx context.Context, userName string) error {
 	return nil
 }
 
-func (s service) GetAdminId() int {
+func (s Service) GetAdminId() int {
 	return s.cfg.Id
 }
 
-func (s service) IsAdmin(userId int) (bool, error) {
+func (s Service) IsAdmin(userId int) (bool, error) {
 	if userId == 0 {
 		return false, nil
 	}
 	return userId == s.cfg.Id, nil
 }
 
-func (s service) Count(ctx context.Context) (int, error) {
+func (s Service) Count(ctx context.Context) (int, error) {
 	count, err := s.users.Count(ctx)
 	if err != nil {
 		return 0, err
@@ -97,7 +97,7 @@ func (s service) Count(ctx context.Context) (int, error) {
 	return int(count), nil
 }
 
-func (s service) CountShare(ctx context.Context) (int, error) {
+func (s Service) CountShare(ctx context.Context) (int, error) {
 	count, err := s.usersShare.Count(ctx)
 	if err != nil {
 		return 0, err
@@ -105,7 +105,7 @@ func (s service) CountShare(ctx context.Context) (int, error) {
 	return int(count), nil
 }
 
-func (s service) CommandsStat(ctx context.Context) (map[string]int, error) {
+func (s Service) CommandsStat(ctx context.Context) (map[string]int, error) {
 	commandsToSend := []string{string(commands.TweetCmd), string(commands.TikTokCmd), string(commands.HelpCmd), string(commands.StartCmd)}
 	result := make(map[string]int, len(commandsToSend))
 	for _, c := range commandsToSend {
