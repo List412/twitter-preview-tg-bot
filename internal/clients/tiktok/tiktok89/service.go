@@ -18,7 +18,7 @@ func (s Service) GetVideo(ctx context.Context, id string) (tgTypes.TweetThread, 
 	if err != nil {
 		return tgTypes.TweetThread{}, err
 	}
-	tweet, err := Map(response, id)
+	tweet, err := Map(response)
 	if err != nil {
 		return tgTypes.TweetThread{}, err
 	}

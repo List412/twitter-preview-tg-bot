@@ -7,7 +7,7 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func Map(parsedVideo *VideoParsed, id string) (tgTypes.TweetThread, error) {
+func Map(parsedVideo *VideoParsed) (tgTypes.TweetThread, error) {
 	tweet := tgTypes.TweetThread{}
 
 	video := parsedVideo.Data
