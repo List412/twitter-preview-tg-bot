@@ -20,7 +20,7 @@ func NewClient(host string, token string) *Client {
 		host:     host,
 		basePath: basePath(token),
 		client:   http.Client{},
-		limiter:  rate.NewLimiter(3, 2),
+		limiter:  rate.NewLimiter(1, 1),
 	}
 }
 
