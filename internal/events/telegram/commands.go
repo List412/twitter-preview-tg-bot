@@ -266,7 +266,7 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 
 	tweet, err := p.twitterService.GetTweet(id)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "GetTweet")
 	}
 
 	err = p.sendTweetAsMessage(chatId, tweet)

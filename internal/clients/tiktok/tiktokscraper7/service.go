@@ -2,6 +2,7 @@ package tiktokscraper7
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -16,11 +17,11 @@ func NewService(client *Client) *Service {
 func (s Service) GetVideo(ctx context.Context, id string) (tgTypes.TweetThread, error) {
 	response, err := s.client.GetVideo(ctx, id)
 	if err != nil {
-		return tgTypes.TweetThread{}, err
+		return tgTypes.TweetThread{}, errors.Wrap(err, "get video")
 	}
 	tweet, err := Map(response)
 	if err != nil {
-		return tgTypes.TweetThread{}, err
+		return tgTypes.TweetThread{}, errors.Wrap(err, "convert response")
 	}
 	return tweet, nil
 }

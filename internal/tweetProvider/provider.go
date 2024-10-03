@@ -45,19 +45,23 @@ func (p *Provider) GetTweet(id string) (tgTypes.TweetThread, error) {
 	}
 
 	combinedErrorMessage := ""
+	wgErr := sync.WaitGroup{}
+	wgErr.Add(1)
 	go func() {
 		for err := range errChan {
 			log.Print(err.Error())
 			combinedErrorMessage += err.Error() + "\n"
 		}
+		wgErr.Done()
 	}()
 
 	allDone := make(chan struct{})
 
 	go func() {
 		defer close(allDone)
-		defer close(errChan)
 		wg.Wait()
+		close(errChan)
+		wgErr.Wait()
 		allDone <- struct{}{}
 	}()
 

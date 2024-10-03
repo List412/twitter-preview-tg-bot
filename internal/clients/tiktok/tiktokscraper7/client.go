@@ -33,7 +33,7 @@ func (c *Client) GetVideo(ctx context.Context, id string) (*VideoParsed, error) 
 
 	var video VideoParsed
 	if err := json.Unmarshal(response, &video); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal video response")
 	}
 
 	if video.Code != 0 {
