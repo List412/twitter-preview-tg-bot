@@ -19,6 +19,8 @@ import (
 	tiktok2 "tweets-tg-bot/internal/clients/tiktok"
 	"tweets-tg-bot/internal/clients/tiktok/tiktok89"
 	"tweets-tg-bot/internal/clients/tiktok/tiktokscraper7"
+	twitter2 "tweets-tg-bot/internal/clients/twitter"
+	"tweets-tg-bot/internal/clients/twitter/twitterapi45"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
@@ -31,7 +33,6 @@ import (
 	repository2 "tweets-tg-bot/internal/storage/share/repository"
 	"tweets-tg-bot/internal/storage/users/repository"
 	"tweets-tg-bot/internal/storage/users/service"
-	"tweets-tg-bot/internal/tweetProvider"
 )
 
 func main() {
@@ -93,11 +94,10 @@ func main() {
 	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
 
 	twttrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.RapidApi.Token)
-	//twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
+	twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
 
-	twitterService := tweetProvider.NewProvider()
-	twitterService.RegisterApi("twttrapi", twttrapi.NewService(twttrapiClient))
-	//twitterService.RegisterApi("twitter-api45", twitterapi45.NewService(twitterApi45Client))
+	twitterService := twitter2.NewService()
+	twitterService.RegisterApi(twttrapi.NewService(twttrapiClient), twitterapi45.NewService(twitterApi45Client))
 
 	twitterCmdParser := twitter.CommandParser{}
 	tiktokCmdParser := tiktok.CommandParser{}
