@@ -28,7 +28,8 @@ func Map(parsedTweet *Response) (tgTypes.TweetThread, error) {
 
 	for _, photo := range parsedTweet.Media.Photo {
 		media := tgTypes.MediaObject{
-			Url: photo.MediaUrlHttps,
+			Url:  photo.MediaUrlHttps,
+			Name: photo.Id,
 		}
 		tweetContent.Media.Photos = append(tweetContent.Media.Photos, media)
 	}
