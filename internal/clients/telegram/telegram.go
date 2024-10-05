@@ -99,13 +99,13 @@ func (c *Client) SendMedia(chatId int, text string, mediaUrls []MediaForEncoding
 
 	encodedMedia, err := encodedMediaObjects(mediaUrls, text)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "encodedMediaObjects")
 	}
 	q.Add("media", encodedMedia)
 
 	_, err = c.postMultipart(sendMediaGroup, q, allMedia)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "postMultipart")
 	}
 
 	return nil
