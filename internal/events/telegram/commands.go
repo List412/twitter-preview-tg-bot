@@ -343,12 +343,17 @@ func (p *Processor) sendStats(id int, userId int) error {
 		return err
 	}
 
+	mau, dau, err := p.users.CountActiveUsers(ctx)
+	if err != nil {
+		return err
+	}
+
 	comandsStat, err := p.users.CommandsStat(ctx)
 	if err != nil {
 		return err
 	}
 
-	message := fmt.Sprintf("Users: %d \nUsers who share tweets: %d \n", count, countShares)
+	message := fmt.Sprintf("Users: %d \nUsers who share tweets: %d\n\nMAU: %d \nDAU: %d", count, countShares, mau, dau)
 
 	for k, v := range comandsStat {
 		message += fmt.Sprintf("\n%s: %d", k, v)

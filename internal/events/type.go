@@ -22,6 +22,7 @@ type UsersServiceInterface interface {
 	GetAdminId() int
 	Count(ctx context.Context) (int, error)
 	CountShare(ctx context.Context) (int, error)
+	CountActiveUsers(ctx context.Context) (int, int, error)
 	Command(cmd commands.Cmd, userName string)
 	CommandsStat(ctx context.Context) (map[string]int, error)
 }

@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"log"
+	"time"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
 )
@@ -18,18 +20,24 @@ type Repository interface {
 	Count(ctx context.Context) (int64, error)
 }
 
+type ShareRepository interface {
+	Repository
+	RefreshDate(ctx context.Context, userName string) error
+	CountByTime(ctx context.Context, t time.Time) (int, error)
+}
+
 type MetricHandler interface {
 	HandleCmd(ctx context.Context, cmd commands.Cmd)
 	GetCmdStats(ctx context.Context, command string) (prometheus.Counter, error)
 }
 
-func New(repository Repository, shareRepo Repository, metrics MetricHandler, cfg config.Admin) *Service {
+func New(repository Repository, shareRepo ShareRepository, metrics MetricHandler, cfg config.Admin) *Service {
 	return &Service{users: repository, usersShare: shareRepo, metrics: metrics, cfg: cfg}
 }
 
 type Service struct {
 	users      Repository
-	usersShare Repository
+	usersShare ShareRepository
 	metrics    MetricHandler
 	cfg        config.Admin
 }
@@ -38,6 +46,8 @@ func (s Service) Command(cmd commands.Cmd, userName string) {
 	ctx := context.TODO()
 	switch cmd {
 	case commands.TweetCmd:
+		fallthrough
+	case commands.TikTokCmd:
 		err := s.AddShare(ctx, userName)
 		if err != nil {
 			log.Printf("AddShare error: %s", err.Error())
@@ -72,7 +82,12 @@ func (s Service) AddShare(ctx context.Context, userName string) error {
 	if !exist {
 		err := s.usersShare.Add(ctx, userName)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Add")
+		}
+	} else {
+		err := s.usersShare.RefreshDate(ctx, userName)
+		if err != nil {
+			return errors.Wrap(err, "RefreshDate")
 		}
 	}
 	return nil
@@ -103,6 +118,21 @@ func (s Service) CountShare(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return int(count), nil
+}
+
+func (s Service) CountActiveUsers(ctx context.Context) (int, int, error) {
+	m := time.Now().AddDate(0, -1, 0)
+	d := time.Now().AddDate(0, 0, -1)
+
+	mau, err := s.usersShare.CountByTime(ctx, m)
+	if err != nil {
+		return 0, 0, err
+	}
+	dau, err := s.usersShare.CountByTime(ctx, d)
+	if err != nil {
+		return mau, 0, err
+	}
+	return mau, dau, nil
 }
 
 func (s Service) CommandsStat(ctx context.Context) (map[string]int, error) {
