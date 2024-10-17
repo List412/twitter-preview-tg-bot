@@ -2,50 +2,17 @@ package socialapi1instagram
 
 type ParsedPost struct {
 	Data struct {
-		AccessibilityCaption interface{} `json:"accessibility_caption"`
-		Caption              *Caption    `json:"caption"`
-		CaptionIsEdited      bool        `json:"caption_is_edited"`
-		CarouselMedia        []struct {
-			CarouselParentId    string `json:"carousel_parent_id"`
-			CommercialityStatus string `json:"commerciality_status"`
-			ExplorePivotGrid    bool   `json:"explore_pivot_grid"`
-			FbUserTags          struct {
-				In []interface{} `json:"in"`
-			} `json:"fb_user_tags"`
-			FeaturedProducts []interface{} `json:"featured_products"`
-			Id               string        `json:"id"`
-			ImageVersions    struct {
-				Items []struct {
-					Height int    `json:"height"`
-					Url    string `json:"url"`
-					Width  int    `json:"width"`
-				} `json:"items"`
-			} `json:"image_versions"`
-			IsVideo             bool          `json:"is_video"`
-			MediaName           string        `json:"media_name"`
-			MediaType           int           `json:"media_type"`
-			OriginalHeight      int           `json:"original_height"`
-			OriginalWidth       int           `json:"original_width"`
-			Pk                  int64         `json:"pk"`
-			ProductSuggestions  []interface{} `json:"product_suggestions"`
-			ProductType         string        `json:"product_type"`
-			SharingFrictionInfo struct {
-				BloksAppUrl               interface{} `json:"bloks_app_url"`
-				SharingFrictionPayload    interface{} `json:"sharing_friction_payload"`
-				ShouldHaveSharingFriction bool        `json:"should_have_sharing_friction"`
-			} `json:"sharing_friction_info"`
-			ShopRoutingUserId   interface{}   `json:"shop_routing_user_id"`
-			TakenAt             int           `json:"taken_at"`
-			ThumbnailUrl        string        `json:"thumbnail_url"`
-			VideoStickerLocales []interface{} `json:"video_sticker_locales"`
-		} `json:"carousel_media"`
-		CarouselMediaCount                    int           `json:"carousel_media_count"`
-		CarouselMediaIds                      []int64       `json:"carousel_media_ids"`
-		CarouselMediaPendingPostCount         int           `json:"carousel_media_pending_post_count"`
-		ClipsTabPinnedUserIds                 []interface{} `json:"clips_tab_pinned_user_ids"`
-		CoauthorProducerCanSeeOrganicInsights bool          `json:"coauthor_producer_can_see_organic_insights"`
-		CoauthorProducers                     []interface{} `json:"coauthor_producers"`
-		Code                                  string        `json:"code"`
+		AccessibilityCaption                  interface{}     `json:"accessibility_caption"`
+		Caption                               *Caption        `json:"caption"`
+		CaptionIsEdited                       bool            `json:"caption_is_edited"`
+		CarouselMedia                         []CarouselMedia `json:"carousel_media"`
+		CarouselMediaCount                    int             `json:"carousel_media_count"`
+		CarouselMediaIds                      []int64         `json:"carousel_media_ids"`
+		CarouselMediaPendingPostCount         int             `json:"carousel_media_pending_post_count"`
+		ClipsTabPinnedUserIds                 []interface{}   `json:"clips_tab_pinned_user_ids"`
+		CoauthorProducerCanSeeOrganicInsights bool            `json:"coauthor_producer_can_see_organic_insights"`
+		CoauthorProducers                     []interface{}   `json:"coauthor_producers"`
+		Code                                  string          `json:"code"`
 
 		FeaturedProducts []interface{} `json:"featured_products"`
 		FilterType       int           `json:"filter_type"`
@@ -169,6 +136,35 @@ type User struct {
 	ProfilePicId               string `json:"profile_pic_id"`
 	ProfilePicUrl              string `json:"profile_pic_url"`
 	Username                   string `json:"username"`
+}
+
+type CarouselMedia struct {
+	CarouselParentId    string `json:"carousel_parent_id"`
+	CommercialityStatus string `json:"commerciality_status"`
+	ExplorePivotGrid    bool   `json:"explore_pivot_grid"`
+	FbUserTags          struct {
+		In []interface{} `json:"in"`
+	} `json:"fb_user_tags"`
+	FeaturedProducts    []interface{} `json:"featured_products"`
+	Id                  string        `json:"id"`
+	ImageVersions       *ImageVersion `json:"image_versions"`
+	IsVideo             bool          `json:"is_video"`
+	MediaName           string        `json:"media_name"`
+	MediaType           int           `json:"media_type"`
+	OriginalHeight      int           `json:"original_height"`
+	OriginalWidth       int           `json:"original_width"`
+	Pk                  int64         `json:"pk"`
+	ProductSuggestions  []interface{} `json:"product_suggestions"`
+	ProductType         string        `json:"product_type"`
+	SharingFrictionInfo struct {
+		BloksAppUrl               interface{} `json:"bloks_app_url"`
+		SharingFrictionPayload    interface{} `json:"sharing_friction_payload"`
+		ShouldHaveSharingFriction bool        `json:"should_have_sharing_friction"`
+	} `json:"sharing_friction_info"`
+	ShopRoutingUserId   interface{}   `json:"shop_routing_user_id"`
+	TakenAt             int           `json:"taken_at"`
+	ThumbnailUrl        string        `json:"thumbnail_url"`
+	VideoStickerLocales []interface{} `json:"video_sticker_locales"`
 }
 
 type VideoVersion struct {

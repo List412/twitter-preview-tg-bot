@@ -28,7 +28,12 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 			return tweet, errors.Wrap(err, "error getting media object from image")
 		}
 		media.Photos = append(media.Photos, mediaObject)
-	case "video":
+	case "album":
+		photos, err := getMediaFromCarousel(post.Data.CarouselMedia)
+		if err != nil {
+			return tweet, errors.Wrap(err, "error getting photo object from carousel")
+		}
+		media.Photos = append(media.Photos, photos...)
 	case "reel":
 		mediaObject, err := getMediaFromVideoVersions(post.Data.VideoVersions)
 		if err != nil {
@@ -78,6 +83,19 @@ func getMediaFromImageVersions(v *ImageVersion) (tgTypes.MediaObject, error) {
 	}
 
 	return media, nil
+}
+
+func getMediaFromCarousel(carousel []CarouselMedia) ([]tgTypes.MediaObject, error) {
+	var result []tgTypes.MediaObject
+
+	for _, m := range carousel {
+		media, err := getMediaFromImageVersions(m.ImageVersions)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting media from image")
+		}
+		result = append(result, media)
+	}
+	return result, nil
 }
 
 func getMediaFromVideoVersions(v []*VideoVersion) (tgTypes.MediaObject, error) {
