@@ -31,12 +31,15 @@ func (p CommandParser) Parse(text string) (string, error) {
 	}
 
 	path := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(path) != 2 {
+	if len(path) < 2 || len(path) > 3 {
 		return "", errors.New("url don't have id")
 	}
 
 	if path[0] == "" {
-		return "", errors.New("id in url empty")
+		return "", errors.New("media type is empty")
+	}
+	if path[1] == "" {
+		return "", errors.New("media code is empty")
 	}
 	return u.String(), nil
 }

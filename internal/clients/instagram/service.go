@@ -28,12 +28,14 @@ func (s *Service) RegisterApi(api ...Api) {
 
 func (s *Service) GetPost(ctx context.Context, id string) (tgTypes.TweetThread, error) {
 	retries := 2
+	var lastErr error
 	for retries > 0 {
 		retries--
 		for _, api := range s.apis {
 			result, err := s.getPostOrError(ctx, api, id)
 			if err != nil {
-				log.Println("GetTweet", err)
+				log.Println("GetPost", err)
+				lastErr = err
 				continue
 			}
 			result.Source = "instagram"
@@ -42,7 +44,7 @@ func (s *Service) GetPost(ctx context.Context, id string) (tgTypes.TweetThread, 
 		time.Sleep(15 * time.Second)
 	}
 
-	return tgTypes.TweetThread{}, errors.New("failed to retrieve tweet")
+	return tgTypes.TweetThread{}, errors.Wrap(lastErr, "failed to retrieve post")
 }
 
 func (s *Service) getPostOrError(ctx context.Context, api Api, id string) (tweet tgTypes.TweetThread, err error) {

@@ -13,11 +13,19 @@ func TestCommandParser_Parse(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "url",
+			name: "post",
 			args: args{
 				text: "https://www.instagram.com/p/DBOehiuxJtX/?igsh=aGlxbTdxOHd2aml3",
 			},
 			want:    "https://www.instagram.com/p/DBOehiuxJtX/?igsh=aGlxbTdxOHd2aml3",
+			wantErr: false,
+		},
+		{
+			name: "story",
+			args: args{
+				text: "https://www.instagram.com/stories/rodion_balkov/3480992824345244950?utm_source=ig_story_item_share&igsh=NjRhajZ4eWFnd3Jz",
+			},
+			want:    "https://www.instagram.com/stories/rodion_balkov/3480992824345244950?utm_source=ig_story_item_share&igsh=NjRhajZ4eWFnd3Jz",
 			wantErr: false,
 		},
 	}
