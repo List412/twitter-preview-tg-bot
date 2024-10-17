@@ -45,6 +45,8 @@ type Service struct {
 func (s Service) Command(cmd commands.Cmd, userName string) {
 	ctx := context.TODO()
 	switch cmd {
+	case commands.InstagramCmd:
+		fallthrough
 	case commands.TweetCmd:
 		fallthrough
 	case commands.TikTokCmd:
