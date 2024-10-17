@@ -11,7 +11,14 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func New(tgClient *telegram.Client, twitterService TwitterService, tiktokService TikTokService, cmdParsers commands.Parsers, users events.UsersServiceInterface) *Processor {
+func New(
+	tgClient *telegram.Client,
+	twitterService TwitterService,
+	tiktokService TikTokService,
+	instaService InstaService,
+	cmdParsers commands.Parsers,
+	users events.UsersServiceInterface,
+) *Processor {
 	usersChan := make(chan string, 10)
 	usersShareTweet := make(chan string, 10)
 	return &Processor{
@@ -19,6 +26,7 @@ func New(tgClient *telegram.Client, twitterService TwitterService, tiktokService
 		offset:          math.MaxInt64,
 		twitterService:  twitterService,
 		tikTokService:   tiktokService,
+		instaService:    instaService,
 		cmdParser:       cmdParsers,
 		users:           users,
 		usersChan:       usersChan,
@@ -43,11 +51,16 @@ type TikTokService interface {
 	GetVideo(ctx context.Context, id string) (tgTypes.TweetThread, error)
 }
 
+type InstaService interface {
+	GetPost(ctx context.Context, id string) (tgTypes.TweetThread, error)
+}
+
 type Processor struct { //todo rename lol
 	tg              *telegram.Client
 	offset          int
 	twitterService  TwitterService
 	tikTokService   TikTokService
+	instaService    InstaService
 	cmdParser       commands.Parsers
 	users           events.UsersServiceInterface
 	usersChan       chan string

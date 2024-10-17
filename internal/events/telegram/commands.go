@@ -51,6 +51,13 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 		}
 		log.Printf("chat not in test group")
 		return nil
+	case commands.InstagramCmd:
+		log.Printf("got new instagram command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
+		if chatId == -4020168327 || chatId == -1001441929255 || userId == 114927545 {
+			return p.sendInstaPostOrHandleError(chatId, parsed, username)
+		}
+		log.Printf("chat not in test group")
+		return nil
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -142,6 +149,14 @@ func (p *Processor) sendTweetOrHandleError(chatId int, id string, username strin
 
 func (p *Processor) sendTikTokOrHandleError(chatId int, id string, username string) error {
 	err := p.sendTikTok(chatId, id, username)
+	if err != nil {
+		p.sendErrorToAdmin(id, chatId, username, err)
+	}
+	return err
+}
+
+func (p *Processor) sendInstaPostOrHandleError(chatId int, id string, username string) error {
+	err := p.sendInstaPost(chatId, id, username)
 	if err != nil {
 		p.sendErrorToAdmin(id, chatId, username, err)
 	}
@@ -285,6 +300,20 @@ func (p *Processor) sendTikTok(chatId int, id string, username string) error {
 	err = p.sendTweetAsMessage(chatId, tweet)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (p *Processor) sendInstaPost(chatId int, id string, username string) error {
+	tweet, err := p.instaService.GetPost(context.TODO(), id)
+	if err != nil {
+		return errors.Wrap(err, "instaService.GetPost")
+	}
+
+	err = p.sendTweetAsMessage(chatId, tweet)
+	if err != nil {
+		return errors.Wrap(err, "SendTweetAsMessage")
 	}
 
 	return nil

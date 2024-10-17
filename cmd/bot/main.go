@@ -15,6 +15,8 @@ import (
 	"os/signal"
 	"regexp"
 	"syscall"
+	"tweets-tg-bot/internal/clients/instagram"
+	"tweets-tg-bot/internal/clients/instagram/socialapi1instagram"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
 	tiktok2 "tweets-tg-bot/internal/clients/tiktok"
 	"tweets-tg-bot/internal/clients/tiktok/tiktok89"
@@ -28,8 +30,6 @@ import (
 	"tweets-tg-bot/internal/events/consumer/event-consumer"
 	"tweets-tg-bot/internal/events/telegram"
 	metrics2 "tweets-tg-bot/internal/metrics"
-	"tweets-tg-bot/internal/site/tiktok"
-	"tweets-tg-bot/internal/site/twitter"
 	repository2 "tweets-tg-bot/internal/storage/share/repository"
 	"tweets-tg-bot/internal/storage/users/repository"
 	"tweets-tg-bot/internal/storage/users/service"
@@ -99,12 +99,14 @@ func main() {
 	twitterService := twitter2.NewService()
 	twitterService.RegisterApi(twttrapi.NewService(twttrapiClient), twitterapi45.NewService(twitterApi45Client))
 
-	twitterCmdParser := twitter.CommandParser{}
-	tiktokCmdParser := tiktok.CommandParser{}
+	twitterCmdParser := twitter2.CommandParser{}
+	tiktokCmdParser := tiktok2.CommandParser{}
+	instaCmdParser := instagram.CommandParser{}
 
 	cmdParser := commands.Parsers{}
 	cmdParser.RegisterParser(commands.TweetCmd, twitterCmdParser)
 	cmdParser.RegisterParser(commands.TikTokCmd, tiktokCmdParser)
+	cmdParser.RegisterParser(commands.InstagramCmd, instaCmdParser)
 
 	tiktokClient := tiktok89.NewClient(cfg.TikTok89.Host, cfg.RapidApi.Token)
 	tiktokService := tiktok89.NewService(tiktokClient)
@@ -115,10 +117,17 @@ func main() {
 	ttService := tiktok2.NewService()
 	ttService.RegisterApi(tiktokService, tiktok7Service)
 
+	instagramSocialApiClient := socialapi1instagram.NewClient(cfg.Socialapi1Instagram.Host, cfg.RapidApi.Token)
+	instagramSocialApiService := socialapi1instagram.NewService(instagramSocialApiClient)
+
+	instaService := instagram.NewService()
+	instaService.RegisterApi(instagramSocialApiService)
+
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
 		twitterService,
 		ttService,
+		instaService,
 		cmdParser,
 		usersServ,
 	)

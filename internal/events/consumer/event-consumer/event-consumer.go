@@ -64,7 +64,7 @@ func (c *consumer) handleEvents(eventsBatch []commands.Event) error {
 		go func(event commands.Event) {
 			defer wg.Done()
 			if err := c.processor.Process(event); err != nil {
-				log.Printf("can't handle event: %s", err.Error())
+				log.Printf("can't handle event: %s, err: %s", event.Text, err.Error())
 			}
 		}(event)
 	}
