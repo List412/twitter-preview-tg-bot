@@ -23,6 +23,24 @@ var AllCommands = []commands.Cmd{
 var ErrorUnknownCommand = errors.New("unknown command")
 var ErrApiResponse = errors.New("api error")
 
+func isChatIdInTestGroup(chatId int, userId int) bool {
+	testGroupIds := []int{-4020168327, -1001441929255}
+	users := []int{114927545}
+
+	for _, groupId := range testGroupIds {
+		if chatId == groupId {
+			return true
+		}
+	}
+
+	for _, uId := range users {
+		if userId == uId {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Processor) doCmd(text string, chatId int, username string, userId int) error {
 	defer p.recoverPanic(text, chatId, username)
 
@@ -46,14 +64,14 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 		return p.sendTweetOrHandleError(chatId, parsed, username)
 	case commands.TikTokCmd:
 		log.Printf("got new tiktok command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		if chatId == -4020168327 || chatId == -1001441929255 || userId == 114927545 {
+		if isChatIdInTestGroup(chatId, userId) {
 			return p.sendTikTokOrHandleError(chatId, parsed, username)
 		}
 		log.Printf("chat not in test group")
 		return nil
 	case commands.InstagramCmd:
 		log.Printf("got new instagram command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		if chatId == -4020168327 || chatId == -1001441929255 || userId == 114927545 {
+		if isChatIdInTestGroup(chatId, userId) {
 			return p.sendInstaPostOrHandleError(chatId, parsed, username)
 		}
 		log.Printf("chat not in test group")
