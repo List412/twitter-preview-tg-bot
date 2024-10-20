@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -40,7 +40,7 @@ func main() {
 
 	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("error parsing config", "error", err)
 	}
 
 	ctx := context.Background()
@@ -49,7 +49,7 @@ func main() {
 
 	db, err := dbConn.Open(ctx, cfg.Db)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("error opening database connection", "error", err)
 	}
 	defer dbConn.Close(ctx, db)
 
@@ -75,10 +75,10 @@ func main() {
 
 	go func() {
 		addr := fmt.Sprintf(":%d", cfg.Prometheus.Port)
-		log.Printf("Starting web server at %s\n", addr)
+		slog.Info("starting web server", "port", addr)
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {
-			log.Printf("http.ListenAndServer: %v\n", err)
+			slog.Error("http.ListenAndServe", "error", err)
 		}
 	}()
 
@@ -139,10 +139,10 @@ func main() {
 
 	consumer := event_consumer.NewConsumer(eventProcessor, eventProcessor, cfg.Consumer.BatchSize)
 
-	log.Printf("service started")
+	slog.Info("starting consumer")
 
 	if err := consumer.Start(ctx); err != nil {
-		log.Fatal(err)
+		slog.Error("consumer.Start", "error", err)
 	}
 }
 
