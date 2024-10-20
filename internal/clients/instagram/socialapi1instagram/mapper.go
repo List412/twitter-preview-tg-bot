@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"strconv"
 	"time"
+	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -20,6 +21,8 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 	}
 
 	contentType := post.Data.MediaName
+
+	var additionalContents []tgTypes.TweetContent
 
 	switch contentType {
 	case "story":
@@ -47,7 +50,14 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 		if err != nil {
 			return tweet, errors.Wrap(err, "error getting photo object from carousel")
 		}
-		media.Photos = append(media.Photos, photos...)
+		chunkedPhotos := chunkMedia(photos, 10)
+		for i, chunk := range chunkedPhotos {
+			if i == 0 {
+				media.Photos = append(media.Photos, chunk...)
+			} else {
+				additionalContents = append(additionalContents, tgTypes.TweetContent{Media: tgTypes.Media{Photos: chunk}})
+			}
+		}
 	case "reel":
 		mediaObject, err := getMediaFromVideoVersions(post.Data.VideoVersions)
 		if err != nil {
@@ -77,6 +87,10 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 	}
 	content.Media = media
 	tweet.Tweets = append(tweet.Tweets, content)
+
+	if len(additionalContents) > 0 {
+		tweet.Tweets = append(tweet.Tweets, additionalContents...)
+	}
 
 	return tweet, nil
 }
@@ -122,7 +136,11 @@ func getMediaFromVideoVersions(v []*VideoVersion) (tgTypes.MediaObject, error) {
 	media := tgTypes.MediaObject{}
 	for _, video := range v {
 		size := video.Height * video.Width
-		if size > maxSize {
+		fileSize, err := downloader.FileSize(video.Url)
+		if err != nil {
+			return media, errors.Wrap(err, "downloader.FileSize")
+		}
+		if size > maxSize && fileSize < 50*1024*1024 {
 			maxSize = size
 			media = tgTypes.MediaObject{
 				Name:       video.Id,
@@ -137,4 +155,16 @@ func getMediaFromVideoVersions(v []*VideoVersion) (tgTypes.MediaObject, error) {
 	}
 
 	return media, nil
+}
+
+func chunkMedia(media []tgTypes.MediaObject, length int) [][]tgTypes.MediaObject {
+	var result [][]tgTypes.MediaObject
+
+	mediaIndex := 0
+	for mediaIndex < len(media) {
+		chunkLength := min(length, len(media[mediaIndex:]))
+		result = append(result, media[mediaIndex:mediaIndex+chunkLength])
+		mediaIndex += chunkLength
+	}
+	return result
 }

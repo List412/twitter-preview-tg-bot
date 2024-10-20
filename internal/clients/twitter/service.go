@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-	"log"
+	"log/slog"
 	"runtime/debug"
 	"time"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
@@ -33,7 +33,7 @@ func (s *Service) GetTweet(id string) (tgTypes.TweetThread, error) {
 		for _, api := range s.apis {
 			result, err := s.getTweetOrError(context.Background(), api, id)
 			if err != nil {
-				log.Println("GetTweet", err)
+				slog.Error("getTweetOrError", "error", err)
 				continue
 			}
 			result.Source = "twitter"
