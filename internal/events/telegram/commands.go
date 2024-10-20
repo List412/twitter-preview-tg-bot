@@ -85,21 +85,40 @@ func generateHeader(tweet tgTypes.TweetThread) string {
 
 	result += fmt.Sprintf("%s", twTime)
 
-	if tweet.Views != "" {
+	if tweet.Views != "" && tweet.Views != "0" {
 		views, err := strconv.Atoi(tweet.Views)
 		if err == nil {
 			tweet.Views = shortNumber(views)
 		}
-		result += fmt.Sprintf(" %s Views", tweet.Views)
+		result += fmt.Sprintf(" %s Views\n", tweet.Views)
 	}
 
-	result += fmt.Sprintf(
-		"\n%s Retweets  %s Replies  %s Quotes  %s Likes \n\n",
-		shortNumber(tweet.Retweets),
-		shortNumber(tweet.Replies),
-		shortNumber(tweet.Quotes),
-		shortNumber(tweet.Likes),
-	)
+	addedLine := false
+	if tweet.Retweets != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Retweets", shortNumber(tweet.Retweets))
+	}
+
+	if tweet.Replies != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Replies", shortNumber(tweet.Replies))
+	}
+
+	if tweet.Quotes != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Quotes", shortNumber(tweet.Quotes))
+	}
+
+	if tweet.Likes != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Likes", shortNumber(tweet.Likes))
+	}
+
+	if addedLine {
+		result += "\n"
+	}
+
+	result += "\n"
 
 	if tweet.UserNote.Text != "" {
 		result += fmt.Sprintf("<span class=\"tg-spoiler\"><b>%s:</b>\n<i>%s</i>\n\n</span>", tweet.UserNote.Title, tweet.UserNote.Text)
@@ -190,9 +209,8 @@ func (p *Processor) sendTweetAsMessage(chatId int, tweet tgTypes.TweetThread) er
 					tweet.Tweets[i].Media.Photos = downloadedPhotos
 
 					mediasForEncoding = append(mediasForEncoding, telegram.MediaForEncoding{
-						Media:           tweet.Tweets[i].Media.Photos,
-						MediaType:       telegram.MediaTypePhoto,
-						ForceNeedUpload: true,
+						Media:     tweet.Tweets[i].Media.Photos,
+						MediaType: telegram.MediaTypePhoto,
 					})
 				}
 
