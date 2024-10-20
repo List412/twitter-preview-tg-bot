@@ -38,6 +38,9 @@ import (
 
 func main() {
 
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	cfg, err := config.NewConfig()
 	if err != nil {
 		slog.Error("error parsing config", "error", err)
