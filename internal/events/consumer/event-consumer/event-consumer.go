@@ -2,7 +2,7 @@ package event_consumer
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 	"tweets-tg-bot/internal/commands"
@@ -33,7 +33,7 @@ func (c *consumer) Start(ctx context.Context) error {
 		default:
 			gotEvents, err := c.fetcher.Fetch(c.batchSize)
 			if err != nil {
-				log.Printf("[ERR] consumer: %s", err.Error())
+				slog.Error("consumer", "error", err.Error())
 				continue
 			}
 
@@ -43,7 +43,7 @@ func (c *consumer) Start(ctx context.Context) error {
 			}
 
 			if err := c.handleEvents(gotEvents); err != nil {
-				log.Printf("can't handle events %s", err.Error())
+				slog.Error("handleEvents", "error", err.Error())
 				continue
 			}
 		}
@@ -64,7 +64,7 @@ func (c *consumer) handleEvents(eventsBatch []commands.Event) error {
 		go func(event commands.Event) {
 			defer wg.Done()
 			if err := c.processor.Process(event); err != nil {
-				log.Printf("can't handle event: %s, err: %s", event.Text, err.Error())
+				slog.Error("can't handle event", "error", err.Error())
 			}
 		}(event)
 	}
