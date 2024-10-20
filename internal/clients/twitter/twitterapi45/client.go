@@ -6,15 +6,19 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"net/url"
-	"tweets-tg-bot/internal/clients/rapidApi"
 )
 
-func NewClient(host string, token string) *Client {
-	return &Client{rapidApi.NewClient(host, token)}
+func NewClient(rapidApiClient RapidApiClient, host string) *Client {
+	return &Client{rapidApiClient, host}
 }
 
 type Client struct {
-	rapidApi.Client
+	RapidApiClient
+	host string
+}
+
+type RapidApiClient interface {
+	DoRequest(ctx context.Context, host string, method string, query url.Values) ([]byte, error)
 }
 
 const getTweet = "tweet.php"
@@ -23,7 +27,7 @@ func (c *Client) GetTweet(ctx context.Context, id string) (*Response, error) {
 	q := url.Values{}
 	q.Add("id", id)
 
-	response, err := c.DoRequest(ctx, getTweet, q)
+	response, err := c.DoRequest(ctx, c.host, getTweet, q)
 	if err != nil {
 		return nil, err
 	}

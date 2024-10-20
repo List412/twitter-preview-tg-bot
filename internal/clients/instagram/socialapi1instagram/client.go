@@ -3,17 +3,22 @@ package socialapi1instagram
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/url"
-	"tweets-tg-bot/internal/clients/rapidApi"
 )
 
-func NewClient(host string, token string) *Client {
-	return &Client{rapidApi.NewClient(host, token)}
+func NewClient(rapidApiClient RapidApiClient, host string) *Client {
+	return &Client{rapidApiClient, host}
 }
 
 type Client struct {
-	rapidApi.Client
+	RapidApiClient
+	host string
+}
+
+type RapidApiClient interface {
+	DoRequest(ctx context.Context, host string, method string, query url.Values) ([]byte, error)
 }
 
 const getVideo = "v1/post_info"
@@ -23,7 +28,7 @@ func (c *Client) GetVideo(ctx context.Context, id string) (*ParsedPost, error) {
 	q.Add("code_or_id_or_url", id)
 	q.Add("include_insights", "true")
 
-	response, err := c.DoRequest(ctx, getVideo, q)
+	response, err := c.DoRequest(ctx, c.host, getVideo, q)
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +38,10 @@ func (c *Client) GetVideo(ctx context.Context, id string) (*ParsedPost, error) {
 	var post ParsedPost
 	if err := json.Unmarshal(response, &post); err != nil {
 		return nil, err
+	}
+
+	if post.Detail != "" {
+		return nil, fmt.Errorf("%s", post.Detail)
 	}
 
 	return &post, nil

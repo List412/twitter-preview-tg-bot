@@ -105,6 +105,7 @@ type ParsedPost struct {
 		VideoUrl                                             string          `json:"video_url"`
 		VideoVersions                                        []*VideoVersion `json:"video_versions"`
 	} `json:"data"`
+	Detail string `json:"detail"`
 }
 
 type Caption struct {

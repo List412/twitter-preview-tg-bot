@@ -5,15 +5,19 @@ import (
 	"encoding/json"
 	"log"
 	"net/url"
-	"tweets-tg-bot/internal/clients/rapidApi"
 )
 
-func NewClient(host string, token string) *Client {
-	return &Client{rapidApi.NewClient(host, token)}
+func NewClient(rapidApiClient RapidApiClient, host string) *Client {
+	return &Client{rapidApiClient, host}
 }
 
 type Client struct {
-	rapidApi.Client
+	RapidApiClient
+	host string
+}
+
+type RapidApiClient interface {
+	DoRequest(ctx context.Context, host string, method string, query url.Values) ([]byte, error)
 }
 
 const getVideo = "video/info_v2"
@@ -22,7 +26,7 @@ func (c *Client) GetVideo(ctx context.Context, id string) (*VideoParsed, error) 
 	q := url.Values{}
 	q.Add("video_url", id)
 
-	response, err := c.DoRequest(ctx, getVideo, q)
+	response, err := c.DoRequest(ctx, c.host, getVideo, q)
 	if err != nil {
 		return nil, err
 	}

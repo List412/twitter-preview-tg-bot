@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"tweets-tg-bot/internal/clients/instagram"
 	"tweets-tg-bot/internal/clients/instagram/socialapi1instagram"
+	"tweets-tg-bot/internal/clients/rapidApi"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
 	tiktok2 "tweets-tg-bot/internal/clients/tiktok"
 	"tweets-tg-bot/internal/clients/tiktok/tiktok89"
@@ -93,8 +94,10 @@ func main() {
 	shareRepo := repository2.New(shareCollections)
 	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
 
-	twttrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.RapidApi.Token)
-	twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
+	rapidApiClient := rapidApi.NewClient(cfg.RapidApi.Token)
+
+	twttrapiClient := twttrapi.NewClient(rapidApiClient, cfg.Twttrapi.Host)
+	twitterApi45Client := twitterapi45.NewClient(rapidApiClient, cfg.TwitterApi45.Host)
 
 	twitterService := twitter2.NewService()
 	twitterService.RegisterApi(twttrapi.NewService(twttrapiClient), twitterapi45.NewService(twitterApi45Client))
@@ -108,16 +111,16 @@ func main() {
 	cmdParser.RegisterParser(commands.TikTokCmd, tiktokCmdParser)
 	cmdParser.RegisterParser(commands.InstagramCmd, instaCmdParser)
 
-	tiktokClient := tiktok89.NewClient(cfg.TikTok89.Host, cfg.RapidApi.Token)
+	tiktokClient := tiktok89.NewClient(rapidApiClient, cfg.TikTok89.Host)
 	tiktokService := tiktok89.NewService(tiktokClient)
 
-	tiktok7Client := tiktokscraper7.NewClient(cfg.TikTokScrapper7.Host, cfg.RapidApi.Token)
+	tiktok7Client := tiktokscraper7.NewClient(rapidApiClient, cfg.TikTokScrapper7.Host)
 	tiktok7Service := tiktokscraper7.NewService(tiktok7Client)
 
 	ttService := tiktok2.NewService()
 	ttService.RegisterApi(tiktokService, tiktok7Service)
 
-	instagramSocialApiClient := socialapi1instagram.NewClient(cfg.Socialapi1Instagram.Host, cfg.RapidApi.Token)
+	instagramSocialApiClient := socialapi1instagram.NewClient(rapidApiClient, cfg.Socialapi1Instagram.Host)
 	instagramSocialApiService := socialapi1instagram.NewService(instagramSocialApiClient)
 
 	instaService := instagram.NewService()

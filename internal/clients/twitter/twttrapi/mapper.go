@@ -1,6 +1,7 @@
 package twttrapi
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"strings"
 	"time"
@@ -102,8 +103,9 @@ func getMedia(tweet TweetData) (tgTypes.Media, error) {
 		switch media.Type {
 		case "photo":
 			result.Photos = append(result.Photos, tgTypes.MediaObject{
-				Url:  media.MediaUrlHttps,
-				Name: media.MediaKey,
+				Url:        media.MediaUrlHttps,
+				Name:       media.MediaKey,
+				NeedUpload: false,
 			})
 		case "animated_gif":
 			fallthrough
@@ -226,6 +228,7 @@ func chooseVideoVariant(variants []Variant) (*tgTypes.MediaObject, error) {
 
 			if size <= 50*1024*1024 {
 				return &tgTypes.MediaObject{
+					Name:       fmt.Sprintf("video_%d", i),
 					Url:        variants[i].Url,
 					NeedUpload: true,
 				}, nil

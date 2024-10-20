@@ -239,7 +239,7 @@ func encodedMediaObjects(mediaForEncoding []MediaForEncoding, text string) (stri
 
 		for i, v := range mediaUrls {
 			mediaPath := v.Url
-			if v.NeedUpload || mediaForEncoding.ForceNeedUpload {
+			if v.NeedUpload {
 				mediaPath = fmt.Sprintf("attach://%s", v.Name)
 			}
 			media := MediaObject{

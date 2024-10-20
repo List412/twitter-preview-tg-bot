@@ -67,8 +67,10 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 		tweet.Retweets = stats.ShareCount
 	}
 
-	tweet.UserName = author.FullName
-	tweet.UserId = author.Username
+	if author != nil {
+		tweet.UserName = author.FullName
+		tweet.UserId = author.Username
+	}
 
 	if post.Data.Caption != nil {
 		content.Text = post.Data.Caption.Text
@@ -88,8 +90,9 @@ func getMediaFromImageVersions(v *ImageVersion) (tgTypes.MediaObject, error) {
 		if size > maxSize {
 			maxSize = size
 			media = tgTypes.MediaObject{
-				Name: "image",
-				Url:  image.Url,
+				Name:       "image",
+				Url:        image.Url,
+				NeedUpload: false,
 			}
 		}
 	}

@@ -6,12 +6,17 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func NewService(client *Client) *Service {
+func NewService(client ClientI) *Service {
 	return &Service{client: client}
 }
 
 type Service struct {
-	client *Client
+	client ClientI
+}
+
+type ClientI interface {
+	RapidApiClient
+	GetTweet(ctx context.Context, id string) (*ParsedThread, error)
 }
 
 func (s Service) GetTweet(ctx context.Context, id string) (tgTypes.TweetThread, error) {
