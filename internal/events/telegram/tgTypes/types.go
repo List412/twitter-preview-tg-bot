@@ -38,6 +38,7 @@ type UserNote struct {
 }
 
 type TweetThread struct {
+	Source   string
 	UserName string
 	UserId   string
 	Time     time.Time

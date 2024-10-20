@@ -20,7 +20,7 @@ func NewClient(host string, token string) *Client {
 		host:     host,
 		basePath: basePath(token),
 		client:   http.Client{},
-		limiter:  rate.NewLimiter(3, 2),
+		limiter:  rate.NewLimiter(1, 1),
 	}
 }
 
@@ -99,13 +99,13 @@ func (c *Client) SendMedia(chatId int, text string, mediaUrls []MediaForEncoding
 
 	encodedMedia, err := encodedMediaObjects(mediaUrls, text)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "encodedMediaObjects")
 	}
 	q.Add("media", encodedMedia)
 
 	_, err = c.postMultipart(sendMediaGroup, q, allMedia)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "postMultipart")
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func (c *Client) do(req *http.Request) ([]byte, error) {
 		return nil, errors.Wrapf(err, "error while reading response body")
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, c.parseError(body)
+		return nil, errors.Wrapf(c.parseError(body), "response status %s", resp.Status)
 	}
 	return body, nil
 }
@@ -239,7 +239,7 @@ func encodedMediaObjects(mediaForEncoding []MediaForEncoding, text string) (stri
 
 		for i, v := range mediaUrls {
 			mediaPath := v.Url
-			if v.NeedUpload || mediaForEncoding.ForceNeedUpload {
+			if v.NeedUpload {
 				mediaPath = fmt.Sprintf("attach://%s", v.Name)
 			}
 			media := MediaObject{

@@ -20,6 +20,7 @@ type Response struct {
 	Media struct {
 		Photo []struct {
 			MediaUrlHttps string `json:"media_url_https"`
+			Id            string `json:"id"`
 		} `json:"photo"`
 		Video []struct {
 			MediaUrlHttps string    `json:"media_url_https"`

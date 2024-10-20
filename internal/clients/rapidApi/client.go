@@ -10,24 +10,22 @@ import (
 	"path"
 )
 
-func NewClient(host string, token string) Client {
+func NewClient(token string) Client {
 	return Client{
-		host:   host,
 		token:  token,
 		client: http.Client{},
 	}
 }
 
 type Client struct {
-	host   string
 	token  string
 	client http.Client
 }
 
-func (c *Client) DoRequest(ctx context.Context, method string, query url.Values) ([]byte, error) {
+func (c Client) DoRequest(ctx context.Context, host string, method string, query url.Values) ([]byte, error) {
 	u := url.URL{
 		Scheme: "https",
-		Host:   c.host,
+		Host:   host,
 		Path:   path.Join(method),
 	}
 
@@ -37,10 +35,9 @@ func (c *Client) DoRequest(ctx context.Context, method string, query url.Values)
 	}
 
 	req.Header.Add("X-RapidAPI-Key", c.token)
-	req.Header.Add("X-RapidAPI-Host", c.host)
+	req.Header.Add("X-RapidAPI-Host", host)
 
 	req.URL.RawQuery = query.Encode()
-
 	log.Printf("%s %s %s\n", req.RemoteAddr, req.Method, req.URL)
 	resp, err := c.client.Do(req)
 	if err != nil {

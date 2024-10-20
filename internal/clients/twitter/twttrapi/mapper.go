@@ -1,6 +1,7 @@
 package twttrapi
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"strings"
 	"time"
@@ -38,7 +39,10 @@ func Map(parsedTweet *ParsedThread, id string) (tgTypes.TweetThread, error) {
 	tweet.UserName = userResult.Name
 	tweet.UserId = userResult.ScreenName
 
-	entries := getEntries(parsedTweet)
+	entries, err := getEntries(parsedTweet)
+	if err != nil {
+		return tgTypes.TweetThread{}, errors.Wrap(err, "no entries")
+	}
 	content, err := parseEntries(entries, entryId)
 	if err != nil {
 		return tgTypes.TweetThread{}, errors.Wrap(err, "error parsing entries")
@@ -99,8 +103,9 @@ func getMedia(tweet TweetData) (tgTypes.Media, error) {
 		switch media.Type {
 		case "photo":
 			result.Photos = append(result.Photos, tgTypes.MediaObject{
-				Url:  media.MediaUrlHttps,
-				Name: media.MediaKey,
+				Url:        media.MediaUrlHttps,
+				Name:       media.MediaKey,
+				NeedUpload: false,
 			})
 		case "animated_gif":
 			fallthrough
@@ -117,8 +122,12 @@ func getMedia(tweet TweetData) (tgTypes.Media, error) {
 	return result, nil
 }
 
-func getEntries(tweet *ParsedThread) []Entity {
-	return tweet.Data.TimelineResponse.Instructions[0].Entries
+func getEntries(tweet *ParsedThread) ([]Entity, error) {
+	if len(tweet.Data.TimelineResponse.Instructions) > 0 {
+		return tweet.Data.TimelineResponse.Instructions[0].Entries, nil
+	}
+
+	return nil, errors.New("no timeline instructions found")
 }
 
 func getUserData(entry Entity) UserData {
@@ -128,7 +137,12 @@ func getUserData(entry Entity) UserData {
 func getCurrentEntry(tweet *ParsedThread, id string) (Entity, int, error) {
 	entryId := "tweet-" + id
 
-	for i, entry := range getEntries(tweet) {
+	entries, err := getEntries(tweet)
+	if err != nil {
+		return Entity{}, 0, errors.Wrap(err, "could not get entries")
+	}
+
+	for i, entry := range entries {
 		if entryId == entry.EntryId {
 			return entry, i, nil
 		}
@@ -169,7 +183,7 @@ func getTweetFromEntity(entity Entity, index int) *Tweet {
 		tweet = tweet.Tweet
 	}
 
-	return entity.Content.Items[index].Item.Content.TweetResult.Result
+	return tweet
 }
 
 func getResultFromTweet(tw *Tweet) *TweetData {
@@ -214,6 +228,7 @@ func chooseVideoVariant(variants []Variant) (*tgTypes.MediaObject, error) {
 
 			if size <= 50*1024*1024 {
 				return &tgTypes.MediaObject{
+					Name:       fmt.Sprintf("video_%d", i),
 					Url:        variants[i].Url,
 					NeedUpload: true,
 				}, nil

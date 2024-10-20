@@ -9,14 +9,23 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"syscall"
+	"tweets-tg-bot/internal/clients/instagram"
+	"tweets-tg-bot/internal/clients/instagram/socialapi1instagram"
+	"tweets-tg-bot/internal/clients/rapidApi"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
+	tiktok2 "tweets-tg-bot/internal/clients/tiktok"
+	"tweets-tg-bot/internal/clients/tiktok/tiktok89"
+	"tweets-tg-bot/internal/clients/tiktok/tiktokscraper7"
+	twitter2 "tweets-tg-bot/internal/clients/twitter"
+	"tweets-tg-bot/internal/clients/twitter/twitterapi45"
 	"tweets-tg-bot/internal/clients/twitter/twttrapi"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/dbConn"
 	"tweets-tg-bot/internal/events/consumer/event-consumer"
@@ -25,14 +34,13 @@ import (
 	repository2 "tweets-tg-bot/internal/storage/share/repository"
 	"tweets-tg-bot/internal/storage/users/repository"
 	"tweets-tg-bot/internal/storage/users/service"
-	"tweets-tg-bot/internal/tweetProvider"
 )
 
 func main() {
 
 	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("error parsing config", "error", err)
 	}
 
 	ctx := context.Background()
@@ -41,7 +49,7 @@ func main() {
 
 	db, err := dbConn.Open(ctx, cfg.Db)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("error opening database connection", "error", err)
 	}
 	defer dbConn.Close(ctx, db)
 
@@ -67,10 +75,10 @@ func main() {
 
 	go func() {
 		addr := fmt.Sprintf(":%d", cfg.Prometheus.Port)
-		log.Printf("Starting web server at %s\n", addr)
+		slog.Info("starting web server", "port", addr)
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {
-			log.Printf("http.ListenAndServer: %v\n", err)
+			slog.Error("http.ListenAndServe", "error", err)
 		}
 	}()
 
@@ -86,16 +94,44 @@ func main() {
 	shareRepo := repository2.New(shareCollections)
 	usersServ := service.New(usersRepo, shareRepo, &metricsHandler, cfg.Admin)
 
-	twttrapiClient := twttrapi.NewClient(cfg.Twttrapi.Host, cfg.RapidApi.Token)
-	//twitterApi45Client := twitterapi45.NewClient(cfg.TwitterApi45.Host, cfg.RapidApi.Token)
+	rapidApiClient := rapidApi.NewClient(cfg.RapidApi.Token)
 
-	twitterService := tweetProvider.NewProvider()
-	twitterService.RegisterApi("twttrapi", twttrapi.NewService(twttrapiClient))
-	//twitterService.RegisterApi("twitter-api45", twitterapi45.NewService(twitterApi45Client))
+	twttrapiClient := twttrapi.NewClient(rapidApiClient, cfg.Twttrapi.Host)
+	twitterApi45Client := twitterapi45.NewClient(rapidApiClient, cfg.TwitterApi45.Host)
+
+	twitterService := twitter2.NewService()
+	twitterService.RegisterApi(twttrapi.NewService(twttrapiClient), twitterapi45.NewService(twitterApi45Client))
+
+	twitterCmdParser := twitter2.CommandParser{}
+	tiktokCmdParser := tiktok2.CommandParser{}
+	instaCmdParser := instagram.CommandParser{}
+
+	cmdParser := commands.Parsers{}
+	cmdParser.RegisterParser(commands.TweetCmd, twitterCmdParser)
+	cmdParser.RegisterParser(commands.TikTokCmd, tiktokCmdParser)
+	cmdParser.RegisterParser(commands.InstagramCmd, instaCmdParser)
+
+	tiktokClient := tiktok89.NewClient(rapidApiClient, cfg.TikTok89.Host)
+	tiktokService := tiktok89.NewService(tiktokClient)
+
+	tiktok7Client := tiktokscraper7.NewClient(rapidApiClient, cfg.TikTokScrapper7.Host)
+	tiktok7Service := tiktokscraper7.NewService(tiktok7Client)
+
+	ttService := tiktok2.NewService()
+	ttService.RegisterApi(tiktokService, tiktok7Service)
+
+	instagramSocialApiClient := socialapi1instagram.NewClient(rapidApiClient, cfg.Socialapi1Instagram.Host)
+	instagramSocialApiService := socialapi1instagram.NewService(instagramSocialApiClient)
+
+	instaService := instagram.NewService()
+	instaService.RegisterApi(instagramSocialApiService)
 
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
 		twitterService,
+		ttService,
+		instaService,
+		cmdParser,
 		usersServ,
 	)
 
@@ -103,10 +139,10 @@ func main() {
 
 	consumer := event_consumer.NewConsumer(eventProcessor, eventProcessor, cfg.Consumer.BatchSize)
 
-	log.Printf("service started")
+	slog.Info("starting consumer")
 
 	if err := consumer.Start(ctx); err != nil {
-		log.Fatal(err)
+		slog.Error("consumer.Start", "error", err)
 	}
 }
 

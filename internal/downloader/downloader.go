@@ -12,6 +12,9 @@ func Download(urls []tgTypes.MediaObject) ([]tgTypes.MediaObject, error) {
 	errGr := errgroup.Group{}
 
 	for i, v := range urls {
+		if !v.NeedUpload {
+			continue
+		}
 		index := i
 		url := v.Url
 		errGr.Go(func() error {

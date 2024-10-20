@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"log"
+	"runtime/debug"
 	"sync"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
@@ -44,24 +45,29 @@ func (p *Provider) GetTweet(id string) (tgTypes.TweetThread, error) {
 	}
 
 	combinedErrorMessage := ""
+	wgErr := sync.WaitGroup{}
+	wgErr.Add(1)
 	go func() {
 		for err := range errChan {
 			log.Print(err.Error())
 			combinedErrorMessage += err.Error() + "\n"
 		}
+		wgErr.Done()
 	}()
 
 	allDone := make(chan struct{})
 
 	go func() {
 		defer close(allDone)
-		defer close(errChan)
 		wg.Wait()
+		close(errChan)
+		wgErr.Wait()
 		allDone <- struct{}{}
 	}()
 
 	select {
 	case result := <-resultChan:
+		result.Source = "twitter"
 		return result, nil
 	case <-allDone:
 		return tgTypes.TweetThread{}, errors.New(combinedErrorMessage)
@@ -110,6 +116,7 @@ func (p *Provider) runGetTweet(
 
 	retry := 0
 	for {
+		log.Printf("%s attempt #%d id %s", name, retry, id)
 		result, err := api.GetTweet(ctx, id)
 		if err != nil {
 			retry++
@@ -126,6 +133,6 @@ func (p *Provider) runGetTweet(
 
 func recoverPanic(name string, errChan chan<- error) {
 	if r := recover(); r != nil {
-		errChan <- errors.New(fmt.Sprintf("api %s: %v", name, r))
+		errChan <- errors.New(fmt.Sprintf("api %s: %+v; stack: %s", name, r, debug.Stack()))
 	}
 }

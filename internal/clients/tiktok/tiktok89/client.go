@@ -1,4 +1,4 @@
-package twitterapi45
+package tiktok89
 
 import (
 	"context"
@@ -21,23 +21,27 @@ type RapidApiClient interface {
 	DoRequest(ctx context.Context, host string, method string, query url.Values) ([]byte, error)
 }
 
-const getTweet = "tweet.php"
+const getVideo = "tiktok"
 
-func (c *Client) GetTweet(ctx context.Context, id string) (*Response, error) {
+func (c *Client) GetVideo(ctx context.Context, id string) (*VideoParsed, error) {
 	q := url.Values{}
-	q.Add("id", id)
+	q.Add("link", id)
 
-	response, err := c.DoRequest(ctx, c.host, getTweet, q)
+	response, err := c.DoRequest(ctx, c.host, getVideo, q)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("GetTweet done %s", id)
+	log.Printf("GetVideo done %s", id)
 
-	var tweet Response
-	if err := json.Unmarshal(response, &tweet); err != nil {
-		return nil, errors.Wrap(err, "unmarshal error")
+	var video VideoParsed
+	if err := json.Unmarshal(response, &video); err != nil {
+		return nil, err
 	}
 
-	return &tweet, err
+	if !video.Ok {
+		return nil, errors.New(video.ErrorMessage)
+	}
+
+	return &video, nil
 }

@@ -7,7 +7,6 @@ import (
 	"html"
 	"log"
 	"math/rand"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -24,12 +23,30 @@ var AllCommands = []commands.Cmd{
 var ErrorUnknownCommand = errors.New("unknown command")
 var ErrApiResponse = errors.New("api error")
 
+func isChatIdInTestGroup(chatId int, userId int) bool {
+	testGroupIds := []int{-4020168327, -1001441929255}
+	users := []int{114927545}
+
+	for _, groupId := range testGroupIds {
+		if chatId == groupId {
+			return true
+		}
+	}
+
+	for _, uId := range users {
+		if userId == uId {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Processor) doCmd(text string, chatId int, username string, userId int) error {
 	defer p.recoverPanic(text, chatId, username)
 
 	text = strings.TrimSpace(text)
 
-	cmd, err := parseCmd(text)
+	cmd, parsed, err := p.parseCmd(text)
 	if errors.Is(err, ErrorUnknownCommand) {
 		return nil
 	}
@@ -43,12 +60,22 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 
 	switch cmd {
 	case commands.TweetCmd:
-		id, err := parseTweeterUrl(text)
-		if err != nil {
-			return nil
+		log.Printf("got new tweet command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
+		return p.sendTweetOrHandleError(chatId, parsed, username)
+	case commands.TikTokCmd:
+		log.Printf("got new tiktok command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
+		if isChatIdInTestGroup(chatId, userId) {
+			return p.sendTikTokOrHandleError(chatId, parsed, username)
 		}
-		log.Printf("got new command: %s from: %s (%d)", text, username, userId)
-		return p.sendTweetOrHandleError(chatId, id, username)
+		log.Printf("chat not in test group")
+		return nil
+	case commands.InstagramCmd:
+		log.Printf("got new instagram command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
+		if isChatIdInTestGroup(chatId, userId) {
+			return p.sendInstaPostOrHandleError(chatId, parsed, username)
+		}
+		log.Printf("chat not in test group")
+		return nil
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -65,27 +92,51 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 func generateHeader(tweet tgTypes.TweetThread) string {
 	result := ""
 
-	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) tweeted:\n", tweet.UserName, tweet.UserId)
+	action := "tweeted"
+	if tweet.Source != "twitter" {
+		action = "posted"
+	}
+
+	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) %s:\n", tweet.UserName, tweet.UserId, action)
 
 	twTime := tweet.Time.Format("15:04 · 2 Jan 2006")
 
 	result += fmt.Sprintf("%s", twTime)
 
-	if tweet.Views != "" {
+	if tweet.Views != "" && tweet.Views != "0" {
 		views, err := strconv.Atoi(tweet.Views)
 		if err == nil {
 			tweet.Views = shortNumber(views)
 		}
-		result += fmt.Sprintf(" %s Views", tweet.Views)
+		result += fmt.Sprintf(" %s Views\n", tweet.Views)
 	}
 
-	result += fmt.Sprintf(
-		"\n%s Retweets  %s Replies  %s Quotes  %s Likes \n\n",
-		shortNumber(tweet.Retweets),
-		shortNumber(tweet.Replies),
-		shortNumber(tweet.Quotes),
-		shortNumber(tweet.Likes),
-	)
+	addedLine := false
+	if tweet.Retweets != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Retweets", shortNumber(tweet.Retweets))
+	}
+
+	if tweet.Replies != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Replies", shortNumber(tweet.Replies))
+	}
+
+	if tweet.Quotes != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Quotes", shortNumber(tweet.Quotes))
+	}
+
+	if tweet.Likes != 0 {
+		addedLine = true
+		result += fmt.Sprintf(" %s Likes", shortNumber(tweet.Likes))
+	}
+
+	if addedLine {
+		result += "\n"
+	}
+
+	result += "\n"
 
 	if tweet.UserNote.Text != "" {
 		result += fmt.Sprintf("<span class=\"tg-spoiler\"><b>%s:</b>\n<i>%s</i>\n\n</span>", tweet.UserNote.Title, tweet.UserNote.Text)
@@ -133,14 +184,23 @@ func (p *Processor) sendTweetOrHandleError(chatId int, id string, username strin
 	return nil
 }
 
-func (p *Processor) sendTweet(chatId int, id string, username string) error {
-	defer timeTrack(time.Now(), "sendTweet")
-
-	tweet, err := p.twitterService.GetTweet(id)
+func (p *Processor) sendTikTokOrHandleError(chatId int, id string, username string) error {
+	err := p.sendTikTok(chatId, id, username)
 	if err != nil {
-		return err
+		p.sendErrorToAdmin(id, chatId, username, err)
 	}
+	return err
+}
 
+func (p *Processor) sendInstaPostOrHandleError(chatId int, id string, username string) error {
+	err := p.sendInstaPost(chatId, id, username)
+	if err != nil {
+		p.sendErrorToAdmin(id, chatId, username, err)
+	}
+	return err
+}
+
+func (p *Processor) sendTweetAsMessage(chatId int, tweet tgTypes.TweetThread) error {
 	for i, tw := range tweet.Tweets {
 
 		message := html.EscapeString(generateText(tw))
@@ -155,28 +215,27 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 		}
 
 		for _, m := range messages {
-			if len(tweet.Tweets[i].Media.Videos) >= 2 ||
+			if len(tweet.Tweets[i].Media.Videos) >= 2 || len(tweet.Tweets[i].Media.Photos) > 0 ||
 				(len(tweet.Tweets[i].Media.Videos) == 1 && len(tweet.Tweets[i].Media.Photos) >= 1) {
 
 				var mediasForEncoding []telegram.MediaForEncoding
 				if len(tweet.Tweets[i].Media.Photos) > 0 {
 					downloadedPhotos, err := downloader.Download(tweet.Tweets[i].Media.Photos)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "downloading photo files")
 					}
 					tweet.Tweets[i].Media.Photos = downloadedPhotos
 
 					mediasForEncoding = append(mediasForEncoding, telegram.MediaForEncoding{
-						Media:           tweet.Tweets[i].Media.Photos,
-						MediaType:       telegram.MediaTypePhoto,
-						ForceNeedUpload: true,
+						Media:     tweet.Tweets[i].Media.Photos,
+						MediaType: telegram.MediaTypePhoto,
 					})
 				}
 
 				if len(tweet.Tweets[i].Media.Videos) > 0 {
 					downloadedVideos, err := downloader.Download(tweet.Tweets[i].Media.Videos)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to download videos")
 					}
 					tweet.Tweets[i].Media.Videos = downloadedVideos
 
@@ -190,7 +249,7 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 
 				err = p.tg.SendMedia(chatId, m, mediasForEncoding, allMedia)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "SendMedia")
 				}
 				tweet.Tweets[i].Media.Videos = nil
 				continue
@@ -199,7 +258,7 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 			if len(tweet.Tweets[i].Media.Videos) == 1 {
 				downloadedVideos, err := downloader.Download(tweet.Tweets[i].Media.Videos)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to download video")
 				}
 				tweet.Tweets[i].Media.Videos = downloadedVideos
 
@@ -222,7 +281,7 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 			if len(tweet.Tweets[i].Media.Photos) == 1 {
 				err = p.tg.SendPhoto(chatId, m, photos(tw)[0].Url)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "SendPhoto")
 				}
 				tweet.Tweets[i].Media.Photos = nil
 				continue
@@ -238,18 +297,61 @@ func (p *Processor) sendTweet(chatId int, id string, username string) error {
 
 				err = p.tg.SendPhotos(chatId, m, mediaForEncoding)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "SendPhotos")
 				}
 				tweet.Tweets[i].Media.Photos = nil
 				continue
 			}
 
 			if err := p.tg.SendMessage(chatId, m); err != nil {
-				return err
+				return errors.Wrap(err, "SendMessage")
 			}
 			continue
 		}
 	}
+	return nil
+}
+
+func (p *Processor) sendTweet(chatId int, id string, username string) error {
+	defer timeTrack(time.Now(), "sendTweet")
+
+	tweet, err := p.twitterService.GetTweet(id)
+	if err != nil {
+		return errors.Wrap(err, "GetTweet")
+	}
+
+	err = p.sendTweetAsMessage(chatId, tweet)
+	if err != nil {
+		return errors.Wrap(err, "SendTweetAsMessage")
+	}
+	return nil
+}
+
+func (p *Processor) sendTikTok(chatId int, id string, username string) error {
+	tweet, err := p.tikTokService.GetVideo(context.TODO(), id)
+	if err != nil {
+		return err
+	}
+
+	err = p.sendTweetAsMessage(chatId, tweet)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Processor) sendInstaPost(chatId int, id string, username string) error {
+	tweet, err := p.instaService.GetPost(context.TODO(), id)
+	if err != nil {
+		return errors.Wrap(err, "instaService.GetPost")
+	}
+
+	err = p.sendTweetAsMessage(chatId, tweet)
+	if err != nil {
+		return errors.Wrap(err, "SendTweetAsMessage")
+	}
+
 	return nil
 }
 
@@ -306,12 +408,17 @@ func (p *Processor) sendStats(id int, userId int) error {
 		return err
 	}
 
+	mau, dau, err := p.users.CountActiveUsers(ctx)
+	if err != nil {
+		return err
+	}
+
 	comandsStat, err := p.users.CommandsStat(ctx)
 	if err != nil {
 		return err
 	}
 
-	message := fmt.Sprintf("Users: %d \nUsers who share tweets: %d \n", count, countShares)
+	message := fmt.Sprintf("Users: %d \nUsers who share tweets: %d\n\nMAU: %d \nDAU: %d", count, countShares, mau, dau)
 
 	for k, v := range comandsStat {
 		message += fmt.Sprintf("\n%s: %d", k, v)
@@ -324,41 +431,10 @@ func (p *Processor) sendStats(id int, userId int) error {
 	return nil
 }
 
-func parseTweeterUrl(text string) (string, error) {
-	u, err := url.Parse(text)
-
-	twitterHosts := []string{"twitter.com", "x.com"}
-
-	if err != nil {
-		return "", err
-	}
-
-	isTwitterUrl := false
-	for _, h := range twitterHosts {
-		if h == u.Host {
-			isTwitterUrl = true
-			break
-		}
-	}
-
-	if !isTwitterUrl {
-		return "", errors.New("not a twitter url")
-	}
-
-	path := strings.Split(strings.TrimLeft(u.Path, "/"), "/")
-	if len(path) != 3 {
-		return "", errors.New("url don't have id")
-	}
-
-	if path[2] == "" {
-		return "", errors.New("id in url empty")
-	}
-	return path[2], nil
-}
-
-func parseCmd(text string) (commands.Cmd, error) {
-	if _, err := parseTweeterUrl(text); err == nil {
-		return commands.TweetCmd, nil
+func (p *Processor) parseCmd(text string) (commands.Cmd, string, error) {
+	cmd, parsed, err := p.cmdParser.Parse(text)
+	if err == nil {
+		return cmd, parsed, err
 	}
 
 	for _, cmd := range AllCommands {
@@ -369,11 +445,11 @@ func parseCmd(text string) (commands.Cmd, error) {
 		cmdPart := text[:len(cmd)]
 
 		if string(cmd) == cmdPart {
-			return cmd, nil
+			return cmd, "", nil
 		}
 	}
 
-	return "", ErrorUnknownCommand
+	return "", "", ErrorUnknownCommand
 }
 
 func photos(tweet tgTypes.TweetContent) []tgTypes.MediaObject {
