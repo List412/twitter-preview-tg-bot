@@ -64,18 +64,18 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 		return p.sendTweetOrHandleError(chatId, parsed, username)
 	case commands.TikTokCmd:
 		log.Printf("got new tiktok command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		if isChatIdInTestGroup(chatId, userId) {
-			return p.sendTikTokOrHandleError(chatId, parsed, username)
-		}
-		log.Printf("chat not in test group")
-		return nil
+		//if isChatIdInTestGroup(chatId, userId) {
+		return p.sendTikTokOrHandleError(chatId, parsed, username)
+		//}
+		//log.Printf("chat not in test group")
+		//return nil
 	case commands.InstagramCmd:
 		log.Printf("got new instagram command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		if isChatIdInTestGroup(chatId, userId) {
-			return p.sendInstaPostOrHandleError(chatId, parsed, username)
-		}
-		log.Printf("chat not in test group")
-		return nil
+		//if isChatIdInTestGroup(chatId, userId) {
+		return p.sendInstaPostOrHandleError(chatId, parsed, username)
+		//}
+		//log.Printf("chat not in test group")
+		//return nil
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
