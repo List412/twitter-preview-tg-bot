@@ -33,7 +33,7 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 			}
 			media.Photos = append(media.Photos, mediaObject)
 		} else {
-			mediaObject, err := getMediaFromVideoVersions(post.Data.VideoVersions)
+			mediaObject, err := getMediaFromVideoVersions(post.Data.VideoVersions, post.Data.VideoUrl)
 			if err != nil {
 				return tweet, errors.Wrap(err, "error getting media from video")
 			}
@@ -59,7 +59,7 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 			}
 		}
 	case "reel":
-		mediaObject, err := getMediaFromVideoVersions(post.Data.VideoVersions)
+		mediaObject, err := getMediaFromVideoVersions(post.Data.VideoVersions, post.Data.VideoUrl)
 		if err != nil {
 			return tweet, errors.Wrap(err, "error getting media from video")
 		}
@@ -131,16 +131,27 @@ func getMediaFromCarousel(carousel []CarouselMedia) ([]tgTypes.MediaObject, erro
 	return result, nil
 }
 
-func getMediaFromVideoVersions(v []*VideoVersion) (tgTypes.MediaObject, error) {
+func getMediaFromVideoVersions(v []*VideoVersion, videoUrl string) (tgTypes.MediaObject, error) {
 	maxSize := 0
 	media := tgTypes.MediaObject{}
+
+	maxFileSize := uint64(50 * 1024 * 1024)
+
+	if videoUrl != "" {
+		return tgTypes.MediaObject{
+			Name:       "video",
+			Url:        videoUrl,
+			NeedUpload: false,
+		}, nil
+	}
+
 	for _, video := range v {
 		size := video.Height * video.Width
 		fileSize, err := downloader.FileSize(video.Url)
 		if err != nil {
-			return media, errors.Wrap(err, "downloader.FileSize")
+			continue
 		}
-		if size > maxSize && fileSize < 50*1024*1024 {
+		if size > maxSize && fileSize <= maxFileSize {
 			maxSize = size
 			media = tgTypes.MediaObject{
 				Name:       video.Id,

@@ -223,7 +223,7 @@ func chooseVideoVariant(variants []Variant) (*tgTypes.MediaObject, error) {
 		if variants[i].ContentType == "video/mp4" {
 			size, err := downloader.FileSize(variants[i].Url)
 			if err != nil {
-				return nil, err
+				continue
 			}
 
 			if size <= 50*1024*1024 {
