@@ -252,6 +252,7 @@ func (p *Processor) sendTweetAsMessage(chatId int, tweet tgTypes.TweetThread) er
 					return errors.Wrap(err, "SendMedia")
 				}
 				tweet.Tweets[i].Media.Videos = nil
+				tweet.Tweets[i].Media.Photos = nil
 				continue
 			}
 
