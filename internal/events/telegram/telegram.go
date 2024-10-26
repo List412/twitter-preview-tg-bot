@@ -48,7 +48,7 @@ type TwitterService interface {
 }
 
 type TikTokService interface {
-	GetVideo(ctx context.Context, id string) (tgTypes.TweetThread, error)
+	GetVideo(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
 }
 
 type InstaService interface {

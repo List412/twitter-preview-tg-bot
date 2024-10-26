@@ -185,7 +185,7 @@ func (p *Processor) sendTweetOrHandleError(chatId int, cmdUrl commands.ParsedCmd
 }
 
 func (p *Processor) sendTikTokOrHandleError(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
-	err := p.sendTikTok(chatId, cmdUrl.StrippedUrl, username)
+	err := p.sendTikTok(chatId, cmdUrl, username)
 	if err != nil {
 		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err)
 	}
@@ -328,8 +328,8 @@ func (p *Processor) sendTweet(chatId int, urlCmd commands.ParsedCmdUrl, username
 	return nil
 }
 
-func (p *Processor) sendTikTok(chatId int, id string, username string) error {
-	tweet, err := p.tikTokService.GetVideo(context.TODO(), id)
+func (p *Processor) sendTikTok(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
+	tweet, err := p.tikTokService.GetVideo(context.TODO(), cmdUrl)
 	if err != nil {
 		return err
 	}

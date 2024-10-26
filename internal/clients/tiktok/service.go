@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"runtime/debug"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -25,9 +26,9 @@ func (s *Service) RegisterApi(api ...Api) {
 	s.apis = append(s.apis, api...)
 }
 
-func (s *Service) GetVideo(ctx context.Context, id string) (tgTypes.TweetThread, error) {
+func (s *Service) GetVideo(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
 	for _, api := range s.apis {
-		result, err := s.getVideoOrError(ctx, api, id)
+		result, err := s.getVideoOrError(ctx, api, cmdUrl)
 		if err != nil {
 			log.Println("GetVideo", err)
 			continue
@@ -38,7 +39,7 @@ func (s *Service) GetVideo(ctx context.Context, id string) (tgTypes.TweetThread,
 	return tgTypes.TweetThread{}, errors.New("failed to retrieve video")
 }
 
-func (s *Service) getVideoOrError(ctx context.Context, api Api, id string) (tweet tgTypes.TweetThread, err error) {
+func (s *Service) getVideoOrError(ctx context.Context, api Api, cmdUrl commands.ParsedCmdUrl) (tweet tgTypes.TweetThread, err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -46,5 +47,5 @@ func (s *Service) getVideoOrError(ctx context.Context, api Api, id string) (twee
 		}
 	}()
 
-	return api.GetVideo(ctx, id)
+	return api.GetVideo(ctx, cmdUrl.StrippedUrl)
 }

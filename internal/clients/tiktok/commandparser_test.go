@@ -25,6 +25,18 @@ func TestCommandParser_Parse(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:    "wrong site",
+			args:    args{text: "https://vt.titcock.com/ZS2VK6K9v/"},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
+		{
+			name:    "empty id",
+			args:    args{text: "https://vt.tiktok.com/"},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
