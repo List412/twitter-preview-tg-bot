@@ -29,7 +29,7 @@ func TestService_GetVideo(t *testing.T) {
 		wantErr bool
 	}
 
-	baseMocksPaths := path.Join(projectpath.ProjectPath(), "tests/mocks/*tiktokscraper7.Service")
+	baseMocksPaths := path.Join(projectpath.ProjectPath(), "tests/mocks/tiktokscraper7.Service")
 
 	dirEntries, err := os.ReadDir(baseMocksPaths)
 	if err != nil {

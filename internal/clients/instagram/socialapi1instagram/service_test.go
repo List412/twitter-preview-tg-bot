@@ -29,7 +29,7 @@ func TestService_GetPost(t *testing.T) {
 		wantErr bool
 	}
 
-	baseMocksPaths := path.Join(projectpath.ProjectPath(), "tests/mocks/*socialapi1instagram.Service")
+	baseMocksPaths := path.Join(projectpath.ProjectPath(), "tests/mocks/socialapi1instagram.Service")
 
 	dirEntries, err := os.ReadDir(baseMocksPaths)
 	if err != nil {

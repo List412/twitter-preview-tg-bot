@@ -29,7 +29,7 @@ func TestService_GetTweet(t *testing.T) {
 		wantErr bool
 	}
 
-	baseMocksPaths := path.Join(projectpath.ProjectPath(), "tests/mocks/*twitterapi45.Service")
+	baseMocksPaths := path.Join(projectpath.ProjectPath(), "tests/mocks/twitterapi45.Service")
 
 	dirEntries, err := os.ReadDir(baseMocksPaths)
 	if err != nil {
