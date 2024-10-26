@@ -1,3 +1,5 @@
+[![Go](https://github.com/List412/twitter-preview-tg-bot/actions/workflows/go.yml/badge.svg)](https://github.com/List412/twitter-preview-tg-bot/actions/workflows/go.yml)
+
 [Бот](https://t.me/twitter_preview_tg_bot) умеет брать твиты по ссылке и скидывать их в телеграм)) 
 
 # build
