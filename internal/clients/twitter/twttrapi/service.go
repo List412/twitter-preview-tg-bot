@@ -6,12 +6,17 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
-func NewService(client ClientI) *Service {
-	return &Service{client: client}
+func NewService(client ClientI, mapper MapperI) *Service {
+	return &Service{client: client, mapper: mapper}
 }
 
 type Service struct {
 	client ClientI
+	mapper MapperI
+}
+
+type MapperI interface {
+	Map(parsedTweet *ParsedThread, id string) (tgTypes.TweetThread, error)
 }
 
 type ClientI interface {
@@ -24,7 +29,7 @@ func (s Service) GetTweet(ctx context.Context, id string) (tgTypes.TweetThread, 
 	if err != nil {
 		return tgTypes.TweetThread{}, errors.Wrap(err, "get tweet")
 	}
-	tweet, err := Map(response, id)
+	tweet, err := s.mapper.Map(response, id)
 	if err != nil {
 		return tgTypes.TweetThread{}, errors.Wrap(err, "map")
 	}

@@ -8,6 +8,17 @@ import (
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
+type Downloader struct {
+}
+
+func (d Downloader) FileSize(url string) (uint64, error) {
+	return FileSize(url)
+}
+
+func (d Downloader) Download(urls []tgTypes.MediaObject) ([]tgTypes.MediaObject, error) {
+	return Download(urls)
+}
+
 func Download(urls []tgTypes.MediaObject) ([]tgTypes.MediaObject, error) {
 	errGr := errgroup.Group{}
 

@@ -29,6 +29,7 @@ import (
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/config"
 	"tweets-tg-bot/internal/dbConn"
+	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/consumer/event-consumer"
 	"tweets-tg-bot/internal/events/telegram"
 	metrics2 "tweets-tg-bot/internal/metrics"
@@ -104,7 +105,7 @@ func main() {
 	twitterApi45Client := twitterapi45.NewClient(rapidApiClient, cfg.TwitterApi45.Host)
 
 	twitterService := twitter2.NewService()
-	twitterService.RegisterApi(twttrapi.NewService(twttrapiClient), twitterapi45.NewService(twitterApi45Client))
+	twitterService.RegisterApi(twttrapi.NewService(twttrapiClient, twttrapi.Mapper{Downloader: downloader.Downloader{}}), twitterapi45.NewService(twitterApi45Client))
 
 	twitterCmdParser := twitter2.CommandParser{}
 	tiktokCmdParser := tiktok2.CommandParser{}

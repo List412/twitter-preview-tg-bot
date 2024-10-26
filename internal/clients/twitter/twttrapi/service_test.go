@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"tweets-tg-bot/internal/clients/rapidApi"
+	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 	"tweets-tg-bot/internal/projectpath"
 )
@@ -16,6 +17,7 @@ import (
 func TestService_GetTweet(t *testing.T) {
 	type fields struct {
 		client *Client
+		mapper Mapper
 	}
 	type args struct {
 		ctx context.Context
@@ -62,6 +64,7 @@ func TestService_GetTweet(t *testing.T) {
 				name: url,
 				fields: fields{
 					client: client,
+					mapper: Mapper{Downloader: downloader.Mock{}},
 				},
 				args: args{
 					ctx: context.WithValue(context.Background(), rapidApi.CtxUrlKey{}, dirEntry.Name()),
@@ -77,6 +80,7 @@ func TestService_GetTweet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := Service{
 				client: tt.fields.client,
+				mapper: tt.fields.mapper,
 			}
 			got, err := s.GetTweet(tt.args.ctx, tt.args.id)
 			if (err != nil) != tt.wantErr {
