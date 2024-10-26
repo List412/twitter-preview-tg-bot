@@ -1,0 +1,31 @@
+{
+  "Source": "",
+  "UserName": "RussianMemesLtd",
+  "UserId": "Russian Memes United",
+  "Time": "2024-09-11T20:13:00Z",
+  "Likes": 623,
+  "Retweets": 22,
+  "Quotes": 0,
+  "Views": "",
+  "Replies": 2,
+  "Tweets": [
+    {
+      "Text": "Sad meme https://t.co/UsH92kvOth",
+      "Media": {
+        "Photos": [
+          {
+            "Name": "1831640207432548352",
+            "Url": "https://pbs.twimg.com/media/GWtLEHBXAAAxhDc.jpg",
+            "Data": null,
+            "NeedUpload": false
+          }
+        ],
+        "Videos": null
+      }
+    }
+  ],
+  "UserNote": {
+    "Text": "",
+    "Title": ""
+  }
+}
