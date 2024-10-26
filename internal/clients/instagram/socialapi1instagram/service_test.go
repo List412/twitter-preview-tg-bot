@@ -3,9 +3,9 @@ package socialapi1instagram
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-test/deep"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 	"testing"
 	"tweets-tg-bot/internal/clients/rapidApi"
@@ -83,8 +83,8 @@ func TestService_GetPost(t *testing.T) {
 				t.Errorf("GetPost() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPost() got = %v, want %v", got, tt.want)
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Errorf("GetPost() diff = %v", diff)
 			}
 		})
 	}
