@@ -1,6 +1,9 @@
 package tiktok
 
-import "testing"
+import (
+	"testing"
+	"tweets-tg-bot/internal/commands"
+)
 
 func TestCommandParser_Parse(t *testing.T) {
 	type args struct {
@@ -9,13 +12,17 @@ func TestCommandParser_Parse(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    string
+		want    commands.ParsedCmdUrl
 		wantErr bool
 	}{
 		{
-			name:    "default",
-			args:    args{text: "https://vt.tiktok.com/ZS2VK6K9v/"},
-			want:    "https://vt.tiktok.com/ZS2VK6K9v/",
+			name: "default",
+			args: args{text: "https://vt.tiktok.com/ZS2VK6K9v/"},
+			want: commands.ParsedCmdUrl{
+				OriginalUrl: "https://vt.tiktok.com/ZS2VK6K9v/",
+				Key:         "ZS2VK6K9v",
+				StrippedUrl: "https://vt.tiktok.com/ZS2VK6K9v/",
+			},
 			wantErr: false,
 		},
 	}
@@ -27,8 +34,16 @@ func TestCommandParser_Parse(t *testing.T) {
 				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("Parse() got = %v, want %v", got, tt.want)
+			if !tt.wantErr {
+				if got.OriginalUrl != tt.want.OriginalUrl {
+					t.Errorf("OriginalUrl = %v, want %v", got.OriginalUrl, tt.want.OriginalUrl)
+				}
+				if got.Key != tt.want.Key {
+					t.Errorf("Key = %v, want %v", got.Key, tt.want.Key)
+				}
+				if got.StrippedUrl != tt.want.StrippedUrl {
+					t.Errorf("StrippedUrl = %v, want %v", got.StrippedUrl, tt.want.StrippedUrl)
+				}
 			}
 		})
 	}

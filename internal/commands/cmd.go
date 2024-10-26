@@ -25,3 +25,9 @@ const TikTokCmd Cmd = "tiktok"
 const InstagramCmd Cmd = "insta"
 
 type Cmd string
+
+type ParsedCmdUrl struct {
+	OriginalUrl string
+	Key         string
+	StrippedUrl string
+}

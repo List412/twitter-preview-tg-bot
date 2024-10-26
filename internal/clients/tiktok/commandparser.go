@@ -4,19 +4,23 @@ import (
 	"github.com/pkg/errors"
 	"net/url"
 	"strings"
+	"tweets-tg-bot/internal/commands"
 )
 
 type CommandParser struct {
 }
 
-func (p CommandParser) Parse(text string) (string, error) {
+func (p CommandParser) Parse(text string) (commands.ParsedCmdUrl, error) {
+	cmdUrl := commands.ParsedCmdUrl{}
 	u, err := url.Parse(text)
+	if err != nil {
+		return cmdUrl, err
+	}
+
+	cmdUrl.OriginalUrl = text
+	cmdUrl.StrippedUrl = u.Scheme + "://" + u.Host + u.Path
 
 	hosts := []string{"tiktok.com", "vt.tiktok.com"}
-
-	if err != nil {
-		return "", err
-	}
 
 	isTiktokUrl := false
 	for _, h := range hosts {
@@ -27,16 +31,17 @@ func (p CommandParser) Parse(text string) (string, error) {
 	}
 
 	if !isTiktokUrl {
-		return "", errors.New("not a tiktok url")
+		return cmdUrl, errors.New("not a tiktok url")
 	}
 
 	path := strings.Split(strings.Trim(u.Path, "/"), "/")
 	if len(path) != 1 {
-		return "", errors.New("url don't have id")
+		return cmdUrl, errors.New("url don't have id")
 	}
 
 	if path[0] == "" {
-		return "", errors.New("id in url empty")
+		return cmdUrl, errors.New("id in url empty")
 	}
-	return u.String(), nil
+	cmdUrl.Key = path[0]
+	return cmdUrl, nil
 }

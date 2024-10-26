@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"runtime/debug"
 	"time"
+	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -26,12 +27,12 @@ func (s *Service) RegisterApi(api ...Api) {
 	s.apis = append(s.apis, api...)
 }
 
-func (s *Service) GetTweet(id string) (tgTypes.TweetThread, error) {
+func (s *Service) GetTweet(urlCmd commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
 	retries := 2
 	for retries > 0 {
 		retries--
 		for _, api := range s.apis {
-			result, err := s.getTweetOrError(context.Background(), api, id)
+			result, err := s.getTweetOrError(context.Background(), api, urlCmd)
 			if err != nil {
 				slog.Error("getTweetOrError", "error", err)
 				continue
@@ -45,7 +46,7 @@ func (s *Service) GetTweet(id string) (tgTypes.TweetThread, error) {
 	return tgTypes.TweetThread{}, errors.New("failed to retrieve tweet")
 }
 
-func (s *Service) getTweetOrError(ctx context.Context, api Api, id string) (tweet tgTypes.TweetThread, err error) {
+func (s *Service) getTweetOrError(ctx context.Context, api Api, urlCmd commands.ParsedCmdUrl) (tweet tgTypes.TweetThread, err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -53,5 +54,5 @@ func (s *Service) getTweetOrError(ctx context.Context, api Api, id string) (twee
 		}
 	}()
 
-	return api.GetTweet(ctx, id)
+	return api.GetTweet(ctx, urlCmd.Key)
 }

@@ -42,10 +42,7 @@ func (c *consumer) Start(ctx context.Context) error {
 				continue
 			}
 
-			if err := c.handleEvents(gotEvents); err != nil {
-				slog.Error("handleEvents", "error", err.Error())
-				continue
-			}
+			go c.handleEvents(gotEvents)
 		}
 	}
 }
@@ -55,7 +52,7 @@ func (c *consumer) Start(ctx context.Context) error {
 3 счетчик ошибок или ретурн
 */
 
-func (c *consumer) handleEvents(eventsBatch []commands.Event) error {
+func (c *consumer) handleEvents(eventsBatch []commands.Event) {
 	wg := sync.WaitGroup{}
 
 	wg.Add(len(eventsBatch))
@@ -70,6 +67,4 @@ func (c *consumer) handleEvents(eventsBatch []commands.Event) error {
 	}
 
 	wg.Wait()
-
-	return nil
 }

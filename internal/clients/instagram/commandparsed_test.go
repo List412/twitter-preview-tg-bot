@@ -1,6 +1,9 @@
 package instagram
 
-import "testing"
+import (
+	"testing"
+	"tweets-tg-bot/internal/commands"
+)
 
 func TestCommandParser_Parse(t *testing.T) {
 	type args struct {
@@ -9,7 +12,7 @@ func TestCommandParser_Parse(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    string
+		want    commands.ParsedCmdUrl
 		wantErr bool
 	}{
 		{
@@ -17,7 +20,11 @@ func TestCommandParser_Parse(t *testing.T) {
 			args: args{
 				text: "https://www.instagram.com/p/DBOehiuxJtX/?igsh=aGlxbTdxOHd2aml3",
 			},
-			want:    "https://www.instagram.com/p/DBOehiuxJtX/?igsh=aGlxbTdxOHd2aml3",
+			want: commands.ParsedCmdUrl{
+				OriginalUrl: "https://www.instagram.com/p/DBOehiuxJtX/?igsh=aGlxbTdxOHd2aml3",
+				Key:         "DBOehiuxJtX",
+				StrippedUrl: "https://www.instagram.com/p/DBOehiuxJtX/",
+			},
 			wantErr: false,
 		},
 		{
@@ -25,8 +32,68 @@ func TestCommandParser_Parse(t *testing.T) {
 			args: args{
 				text: "https://www.instagram.com/stories/rodion_balkov/3480992824345244950?utm_source=ig_story_item_share&igsh=NjRhajZ4eWFnd3Jz",
 			},
-			want:    "https://www.instagram.com/stories/rodion_balkov/3480992824345244950?utm_source=ig_story_item_share&igsh=NjRhajZ4eWFnd3Jz",
+			want: commands.ParsedCmdUrl{
+				OriginalUrl: "https://www.instagram.com/stories/rodion_balkov/3480992824345244950?utm_source=ig_story_item_share&igsh=NjRhajZ4eWFnd3Jz",
+				Key:         "3480992824345244950",
+				StrippedUrl: "https://www.instagram.com/stories/rodion_balkov/3480992824345244950",
+			},
 			wantErr: false,
+		},
+		{
+			name: "story_no_id",
+			args: args{
+				text: "https://www.instagram.com/stories/rodion_balkov/",
+			},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
+		{
+			name: "reel",
+			args: args{
+				text: "https://www.instagram.com/reel/DAlNNKvNCiP/?igsh=MTgyNXBxa29xdjU5ZA==",
+			},
+			want: commands.ParsedCmdUrl{
+				OriginalUrl: "https://www.instagram.com/reel/DAlNNKvNCiP/?igsh=MTgyNXBxa29xdjU5ZA==",
+				Key:         "DAlNNKvNCiP",
+				StrippedUrl: "https://www.instagram.com/reel/DAlNNKvNCiP/",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "not a full url",
+			args:    args{text: "https://www.instagram.com/reel/"},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
+		{
+			name: "base_url",
+			args: args{
+				text: "https://www.instagram.com",
+			},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
+		{
+			name: "base_url2",
+			args: args{
+				text: "https://www.instagram.com/",
+			},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
+		{
+			name: "wrong website",
+			args: args{
+				text: "https://facebook.com",
+			},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
+		{
+			name:    "empty",
+			args:    args{},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -37,8 +104,16 @@ func TestCommandParser_Parse(t *testing.T) {
 				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("Parse() got = %v, want %v", got, tt.want)
+			if !tt.wantErr {
+				if got.OriginalUrl != tt.want.OriginalUrl {
+					t.Errorf("OriginalUrl = %v, want %v", got.OriginalUrl, tt.want.OriginalUrl)
+				}
+				if got.Key != tt.want.Key {
+					t.Errorf("Key = %v, want %v", got.Key, tt.want.Key)
+				}
+				if got.StrippedUrl != tt.want.StrippedUrl {
+					t.Errorf("StrippedUrl = %v, want %v", got.StrippedUrl, tt.want.StrippedUrl)
+				}
 			}
 		})
 	}

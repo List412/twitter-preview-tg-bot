@@ -44,7 +44,7 @@ type Meta struct {
 }
 
 type TwitterService interface {
-	GetTweet(id string) (tgTypes.TweetThread, error)
+	GetTweet(urlCmd commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
 }
 
 type TikTokService interface {
@@ -52,7 +52,7 @@ type TikTokService interface {
 }
 
 type InstaService interface {
-	GetPost(ctx context.Context, id string) (tgTypes.TweetThread, error)
+	GetPost(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
 }
 
 type Processor struct { //todo rename lol

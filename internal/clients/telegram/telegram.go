@@ -7,28 +7,32 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
+	"time"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func NewClient(host string, token string) *Client {
 	return &Client{
-		host:     host,
-		basePath: basePath(token),
-		client:   http.Client{},
-		limiter:  rate.NewLimiter(1, 1),
+		host:       host,
+		basePath:   basePath(token),
+		client:     http.Client{},
+		limiter:    rate.NewLimiter(10, 10),
+		maxRetries: 4,
 	}
 }
 
 type Client struct {
-	host     string
-	basePath string
-	client   http.Client
-	limiter  *rate.Limiter
+	host       string
+	basePath   string
+	client     http.Client
+	limiter    *rate.Limiter
+	maxRetries int
 }
 
 const getUpdates = "getUpdates"
@@ -82,9 +86,17 @@ func (c *Client) SendPhotos(chatId int, text string, mediaUrls []MediaForEncodin
 	}
 	q.Add("media", encodedMedia)
 
-	_, err = c.get(sendMediaGroup, q)
-	if err != nil {
-		return err
+	retry := 0
+	for retry <= c.maxRetries {
+		_, err = c.get(sendMediaGroup, q)
+		if errors.Is(err, ErrToManyRequests) && retry < c.maxRetries {
+			retry++
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "get")
+		}
+		return nil
 	}
 
 	return nil
@@ -103,9 +115,17 @@ func (c *Client) SendMedia(chatId int, text string, mediaUrls []MediaForEncoding
 	}
 	q.Add("media", encodedMedia)
 
-	_, err = c.postMultipart(sendMediaGroup, q, allMedia)
-	if err != nil {
-		return errors.Wrap(err, "postMultipart")
+	retry := 0
+	for retry <= c.maxRetries {
+		_, err = c.postMultipart(sendMediaGroup, q, allMedia)
+		if errors.Is(err, ErrToManyRequests) && retry < c.maxRetries {
+			retry++
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "postMultipart")
+		}
+		return nil
 	}
 
 	return nil
@@ -163,6 +183,16 @@ func (c *Client) do(req *http.Request) ([]byte, error) {
 		return nil, errors.Wrapf(err, "error while reading response body")
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
+		if resp.StatusCode == http.StatusTooManyRequests {
+			tgErr, err := c.parseErrorStruct(body)
+			if err != nil {
+				return nil, err
+			}
+			slog.Info(fmt.Sprintf("To many requests, retry in %d sec...", tgErr.Parameters.RetryAfter))
+			time.Sleep(time.Second * time.Duration(tgErr.Parameters.RetryAfter))
+			return nil, ErrToManyRequests
+		}
+
 		return nil, errors.Wrapf(c.parseError(body), "response status %s", resp.Status)
 	}
 	return body, nil

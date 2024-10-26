@@ -4,20 +4,19 @@ import (
 	"github.com/pkg/errors"
 	"net/url"
 	"strings"
+	"tweets-tg-bot/internal/commands"
 )
 
 type CommandParser struct {
 }
 
-func (p CommandParser) Parse(text string) (string, error) {
+func (p CommandParser) Parse(text string) (commands.ParsedCmdUrl, error) {
 	u, err := url.Parse(text)
-
-	hosts := []string{"instagram.com", "www.instagram.com"}
-
 	if err != nil {
-		return "", err
+		return commands.ParsedCmdUrl{}, err
 	}
 
+	hosts := []string{"instagram.com", "www.instagram.com"}
 	isInstagramUrl := false
 	for _, h := range hosts {
 		if h == u.Host {
@@ -26,20 +25,35 @@ func (p CommandParser) Parse(text string) (string, error) {
 		}
 	}
 
+	parsedUrl := commands.ParsedCmdUrl{}
+	parsedUrl.OriginalUrl = text
+	parsedUrl.StrippedUrl = u.Scheme + "://" + u.Host + u.Path
+
 	if !isInstagramUrl {
-		return "", errors.New("not a instagram url")
+		return commands.ParsedCmdUrl{}, errors.New("not a instagram url")
 	}
 
 	path := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(path) < 2 || len(path) > 3 {
-		return "", errors.New("url don't have id")
+	if len(path) == 0 {
+		return commands.ParsedCmdUrl{}, errors.New("url don't have id")
+	}
+	if path[0] == "" {
+		return commands.ParsedCmdUrl{}, errors.New("media type is empty")
+	}
+	switch path[0] {
+	case "reel":
+		fallthrough
+	case "p":
+		if len(path) != 2 || path[1] == "" {
+			return commands.ParsedCmdUrl{}, errors.New("media code is empty")
+		}
+		parsedUrl.Key = path[1]
+	case "stories":
+		if len(path) != 3 || path[2] == "" {
+			return commands.ParsedCmdUrl{}, errors.New("media code is empty")
+		}
+		parsedUrl.Key = path[2]
 	}
 
-	if path[0] == "" {
-		return "", errors.New("media type is empty")
-	}
-	if path[1] == "" {
-		return "", errors.New("media code is empty")
-	}
-	return u.String(), nil
+	return parsedUrl, nil
 }

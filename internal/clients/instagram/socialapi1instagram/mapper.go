@@ -138,11 +138,14 @@ func getMediaFromVideoVersions(v []*VideoVersion, videoUrl string) (tgTypes.Medi
 	maxFileSize := uint64(50 * 1024 * 1024)
 
 	if videoUrl != "" {
-		return tgTypes.MediaObject{
-			Name:       "video",
-			Url:        videoUrl,
-			NeedUpload: false,
-		}, nil
+		fileSize, err := downloader.FileSize(videoUrl)
+		if err == nil && fileSize <= maxFileSize {
+			return tgTypes.MediaObject{
+				Name:       "video",
+				Url:        videoUrl,
+				NeedUpload: true,
+			}, nil
+		}
 	}
 
 	for _, video := range v {
@@ -156,7 +159,7 @@ func getMediaFromVideoVersions(v []*VideoVersion, videoUrl string) (tgTypes.Medi
 			media = tgTypes.MediaObject{
 				Name:       video.Id,
 				Url:        video.Url,
-				NeedUpload: false,
+				NeedUpload: true,
 			}
 		}
 	}

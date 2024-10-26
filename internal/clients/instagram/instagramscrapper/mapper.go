@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"time"
+	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -129,20 +130,20 @@ func getMediaFromVideoVersions(v []VideoVersion) (tgTypes.MediaObject, error) {
 	maxSize := 0
 	media := tgTypes.MediaObject{}
 
-	//maxFileSize := uint64(50 * 1024 * 1024)
+	maxFileSize := uint64(50 * 1024 * 1024)
 
 	for _, video := range v {
 		size := video.Height * video.Width
-		//fileSize, err := downloader.FileSize(video.Url)
-		//if err != nil {
-		//	continue
-		//}
-		if size > maxSize {
+		fileSize, err := downloader.FileSize(video.Url)
+		if err != nil {
+			continue
+		}
+		if size > maxSize && fileSize <= maxFileSize {
 			maxSize = size
 			media = tgTypes.MediaObject{
 				Name:       "video",
 				Url:        video.Url,
-				NeedUpload: false,
+				NeedUpload: true,
 			}
 		}
 	}
