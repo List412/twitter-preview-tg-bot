@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"syscall"
 	"tweets-tg-bot/internal/clients/instagram"
+	"tweets-tg-bot/internal/clients/instagram/instagrambulkscrapper"
 	"tweets-tg-bot/internal/clients/instagram/instagramscrapper"
 	"tweets-tg-bot/internal/clients/instagram/socialapi1instagram"
 	"tweets-tg-bot/internal/clients/rapidApi"
@@ -131,9 +132,13 @@ func main() {
 	instagramscrapperClient := instagramscrapper.NewClient(rapidApiClient, cfg.InstagramScrapper.Host)
 	instagramscrapperService := instagramscrapper.NewService(instagramscrapperClient)
 
+	instagrambulkscrapperClient := instagrambulkscrapper.NewClient(rapidApiClient, cfg.InstagramBulkScrapper.Host)
+	instagrambulkscrapperService := instagrambulkscrapper.NewService(instagrambulkscrapperClient)
+
 	instaService := instagram.NewService()
 	instaService.RegisterApi(instagramscrapperService)
 	instaService.RegisterApi(instagramSocialApiService)
+	instaService.RegisterApi(instagrambulkscrapperService)
 
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),

@@ -1,6 +1,7 @@
 package rapidApi
 
 import (
+	"bytes"
 	"context"
 	"github.com/pkg/errors"
 	"io"
@@ -30,6 +31,38 @@ func (c Client) DoRequest(ctx context.Context, host string, method string, query
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while creating request: %s", method)
+	}
+
+	req.Header.Add("X-RapidAPI-Key", c.token)
+	req.Header.Add("X-RapidAPI-Host", host)
+
+	req.URL.RawQuery = query.Encode()
+	log.Printf("%s %s %s\n", req.RemoteAddr, req.Method, req.URL)
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while making request: %s", method)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while reading response %s body", method)
+	}
+	return body, nil
+}
+
+func (c Client) DoPostRequest(ctx context.Context, host string, method string, query url.Values, reqBody []byte) ([]byte, error) {
+	u := url.URL{
+		Scheme: "https",
+		Host:   host,
+		Path:   path.Join(method),
+	}
+
+	bodyReader := bytes.NewReader(reqBody)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bodyReader)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while creating request: %s", method)
 	}
