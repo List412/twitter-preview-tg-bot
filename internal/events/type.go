@@ -10,7 +10,7 @@ type Fetcher interface {
 }
 
 type Processor interface {
-	Process(event commands.Event) error
+	Process(ctx context.Context, event commands.Event) error
 	HandleUsers()
 	Close()
 }

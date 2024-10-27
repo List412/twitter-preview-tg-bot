@@ -24,3 +24,7 @@ func (m *RapidApiMock) DoRequest(ctx context.Context, host string, method string
 	key := ctx.Value(CtxUrlKey{}).(string)
 	return m.mocks[key], nil
 }
+
+func (m *RapidApiMock) DoPostRequest(ctx context.Context, host string, method string, query url.Values, b []byte) ([]byte, error) {
+	return m.DoRequest(ctx, host, method, query)
+}

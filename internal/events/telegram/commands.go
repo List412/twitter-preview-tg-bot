@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"html"
-	"log"
+	"log/slog"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -41,7 +41,7 @@ func isChatIdInTestGroup(chatId int, userId int) bool {
 	return false
 }
 
-func (p *Processor) doCmd(text string, chatId int, username string, userId int) error {
+func (p *Processor) doCmd(ctx context.Context, text string, chatId int, username string, userId int) error {
 	defer p.recoverPanic(text, chatId, username)
 
 	text = strings.TrimSpace(text)
@@ -60,22 +60,12 @@ func (p *Processor) doCmd(text string, chatId int, username string, userId int) 
 
 	switch cmd {
 	case commands.TweetCmd:
-		log.Printf("got new tweet command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		return p.sendTweetOrHandleError(chatId, parsed, username)
+		fallthrough
 	case commands.TikTokCmd:
-		log.Printf("got new tiktok command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		//if isChatIdInTestGroup(chatId, userId) {
-		return p.sendTikTokOrHandleError(chatId, parsed, username)
-		//}
-		//log.Printf("chat not in test group")
-		//return nil
+		fallthrough
 	case commands.InstagramCmd:
-		log.Printf("got new instagram command: %s from: %s (%d) in chat %d", text, username, userId, chatId)
-		//if isChatIdInTestGroup(chatId, userId) {
-		return p.sendInstaPostOrHandleError(chatId, parsed, username)
-		//}
-		//log.Printf("chat not in test group")
-		//return nil
+		slog.InfoContext(ctx, "got new command", "cmd", cmd, "command", text, "userId", userId, "chatId", chatId)
+		return p.sendContentOrHandleError(ctx, chatId, cmd, parsed, username)
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
 	case commands.HelpCmd:
@@ -164,18 +154,18 @@ func shortNumber(n int) string {
 	return str
 }
 
-func timeTrack(start time.Time, name string) {
+func timeTrack(ctx context.Context, start time.Time, name string) {
 	elapsed := time.Since(start)
-	log.Printf("%s took %s", name, elapsed)
+	slog.InfoContext(ctx, "time", "func", name, "elapsed", elapsed.String())
 }
 
-func (p *Processor) sendTweetOrHandleError(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
-	err := p.sendTweet(chatId, cmdUrl, username)
+func (p *Processor) sendContentOrHandleError(ctx context.Context, chatId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl, username string) error {
+	err := p.send(ctx, chatId, cmd, cmdUrl)
 	if errors.Is(err, telegram.ErrNoEnoughRightToSendPhoto) {
-		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided tweet. Please allow sending photos in the chat settings.</i>")
+		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided link. Please allow sending photos in the chat settings.</i>")
 	}
 	if errors.Is(err, telegram.ErrNoEnoughRightToSendVideo) {
-		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided tweet. Please allow sending video in the chat settings.</i>")
+		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided link. Please allow sending video in the chat settings.</i>")
 	}
 	if err != nil {
 		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err)
@@ -184,23 +174,22 @@ func (p *Processor) sendTweetOrHandleError(chatId int, cmdUrl commands.ParsedCmd
 	return nil
 }
 
-func (p *Processor) sendTikTokOrHandleError(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
-	err := p.sendTikTok(chatId, cmdUrl, username)
+func (p *Processor) send(ctx context.Context, chatId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl) error {
+	defer timeTrack(ctx, time.Now(), string(cmd))
+
+	content, err := p.contentManager.GetContent(ctx, cmd, cmdUrl)
 	if err != nil {
-		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err)
+		return errors.Wrap(err, "contentManager.GetContent")
 	}
-	return err
+
+	err = p.sendContentAsMessage(chatId, content)
+	if err != nil {
+		return errors.Wrap(err, "sendContentAsMessage")
+	}
+	return nil
 }
 
-func (p *Processor) sendInstaPostOrHandleError(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
-	err := p.sendInstaPost(chatId, cmdUrl, username)
-	if err != nil {
-		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err)
-	}
-	return err
-}
-
-func (p *Processor) sendTweetAsMessage(chatId int, tweet tgTypes.TweetThread) error {
+func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) error {
 	for i, tw := range tweet.Tweets {
 
 		message := html.EscapeString(generateText(tw))
@@ -310,49 +299,6 @@ func (p *Processor) sendTweetAsMessage(chatId int, tweet tgTypes.TweetThread) er
 			continue
 		}
 	}
-	return nil
-}
-
-func (p *Processor) sendTweet(chatId int, urlCmd commands.ParsedCmdUrl, username string) error {
-	defer timeTrack(time.Now(), "sendTweet")
-
-	tweet, err := p.twitterService.GetTweet(urlCmd)
-	if err != nil {
-		return errors.Wrap(err, "GetTweet")
-	}
-
-	err = p.sendTweetAsMessage(chatId, tweet)
-	if err != nil {
-		return errors.Wrap(err, "SendTweetAsMessage")
-	}
-	return nil
-}
-
-func (p *Processor) sendTikTok(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
-	tweet, err := p.tikTokService.GetVideo(context.TODO(), cmdUrl)
-	if err != nil {
-		return err
-	}
-
-	err = p.sendTweetAsMessage(chatId, tweet)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *Processor) sendInstaPost(chatId int, cmdUrl commands.ParsedCmdUrl, username string) error {
-	tweet, err := p.instaService.GetPost(context.TODO(), cmdUrl)
-	if err != nil {
-		return errors.Wrap(err, "instaService.GetPost")
-	}
-
-	err = p.sendTweetAsMessage(chatId, tweet)
-	if err != nil {
-		return errors.Wrap(err, "SendTweetAsMessage")
-	}
-
 	return nil
 }
 

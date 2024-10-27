@@ -27,12 +27,12 @@ func (s *Service) RegisterApi(api ...Api) {
 	s.apis = append(s.apis, api...)
 }
 
-func (s *Service) GetTweet(urlCmd commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
+func (s *Service) GetContent(ctx context.Context, urlCmd commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
 	retries := 2
 	for retries > 0 {
 		retries--
 		for _, api := range s.apis {
-			result, err := s.getTweetOrError(context.Background(), api, urlCmd)
+			result, err := s.getTweetOrError(ctx, api, urlCmd)
 			if err != nil {
 				slog.Error("getTweetOrError", "error", err)
 				continue

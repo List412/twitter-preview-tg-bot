@@ -26,7 +26,7 @@ func (s *Service) RegisterApi(api ...Api) {
 	s.apis = append(s.apis, api...)
 }
 
-func (s *Service) GetVideo(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
+func (s *Service) GetContent(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
 	for _, api := range s.apis {
 		result, err := s.getVideoOrError(ctx, api, cmdUrl)
 		if err != nil {

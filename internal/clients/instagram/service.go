@@ -27,7 +27,7 @@ func (s *Service) RegisterApi(api ...Api) {
 	s.apis = append(s.apis, api...)
 }
 
-func (s *Service) GetPost(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
+func (s *Service) GetContent(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
 	retries := 2
 	var lastErr error
 	for retries > 0 {

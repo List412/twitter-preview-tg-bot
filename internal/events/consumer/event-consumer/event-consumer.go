@@ -2,11 +2,14 @@ package event_consumer
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events"
+	"tweets-tg-bot/internal/logger"
 )
 
 func NewConsumer(fetcher events.Fetcher, processor events.Processor, batchSize int) consumer {
@@ -60,11 +63,22 @@ func (c *consumer) handleEvents(eventsBatch []commands.Event) {
 	for _, event := range eventsBatch {
 		go func(event commands.Event) {
 			defer wg.Done()
-			if err := c.processor.Process(event); err != nil {
+			ctx := context.Background()
+			ctx = context.WithValue(ctx, logger.CtxUUID{}, Rand(4))
+			if err := c.processor.Process(ctx, event); err != nil {
 				slog.Error("can't handle event", "error", err.Error())
 			}
 		}(event)
 	}
 
 	wg.Wait()
+}
+
+func Rand(n int) string {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "uuid_error"
+	}
+	return fmt.Sprintf("%x", b)
 }

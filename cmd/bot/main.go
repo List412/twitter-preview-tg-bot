@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"regexp"
 	"syscall"
+	"tweets-tg-bot/internal/clients"
 	"tweets-tg-bot/internal/clients/instagram"
 	"tweets-tg-bot/internal/clients/instagram/instagrambulkscrapper"
 	"tweets-tg-bot/internal/clients/instagram/instagramscrapper"
@@ -33,6 +34,7 @@ import (
 	"tweets-tg-bot/internal/downloader"
 	"tweets-tg-bot/internal/events/consumer/event-consumer"
 	"tweets-tg-bot/internal/events/telegram"
+	logger2 "tweets-tg-bot/internal/logger"
 	metrics2 "tweets-tg-bot/internal/metrics"
 	repository2 "tweets-tg-bot/internal/storage/share/repository"
 	"tweets-tg-bot/internal/storage/users/repository"
@@ -41,7 +43,7 @@ import (
 
 func main() {
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(logger2.ContextHandler{Handler: slog.NewJSONHandler(os.Stdout, nil)})
 	slog.SetDefault(logger)
 
 	cfg, err := config.NewConfig()
@@ -140,11 +142,14 @@ func main() {
 	instaService.RegisterApi(instagramSocialApiService)
 	instaService.RegisterApi(instagrambulkscrapperService)
 
+	contentProviderManager := clients.NewManager()
+	contentProviderManager.RegisterService(commands.TweetCmd, twitterService).
+		RegisterService(commands.TikTokCmd, ttService).
+		RegisterService(commands.InstagramCmd, instaService)
+
 	eventProcessor := telegram.New(
 		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
-		twitterService,
-		ttService,
-		instaService,
+		contentProviderManager,
 		cmdParser,
 		usersServ,
 	)

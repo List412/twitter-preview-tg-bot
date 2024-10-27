@@ -13,9 +13,7 @@ import (
 
 func New(
 	tgClient *telegram.Client,
-	twitterService TwitterService,
-	tiktokService TikTokService,
-	instaService InstaService,
+	contentManager ContentManager,
 	cmdParsers commands.Parsers,
 	users events.UsersServiceInterface,
 ) *Processor {
@@ -24,9 +22,7 @@ func New(
 	return &Processor{
 		tg:              tgClient,
 		offset:          math.MaxInt64,
-		twitterService:  twitterService,
-		tikTokService:   tiktokService,
-		instaService:    instaService,
+		contentManager:  contentManager,
 		cmdParser:       cmdParsers,
 		users:           users,
 		usersChan:       usersChan,
@@ -43,24 +39,14 @@ type Meta struct {
 	UserId   int
 }
 
-type TwitterService interface {
-	GetTweet(urlCmd commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
-}
-
-type TikTokService interface {
-	GetVideo(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
-}
-
-type InstaService interface {
-	GetPost(ctx context.Context, cmdUrl commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
+type ContentManager interface {
+	GetContent(ctx context.Context, cmd commands.Cmd, urlCmd commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
 }
 
 type Processor struct { //todo rename lol
 	tg              *telegram.Client
 	offset          int
-	twitterService  TwitterService
-	tikTokService   TikTokService
-	instaService    InstaService
+	contentManager  ContentManager
 	cmdParser       commands.Parsers
 	users           events.UsersServiceInterface
 	usersChan       chan string
@@ -89,10 +75,10 @@ func (p *Processor) Fetch(limit int) ([]commands.Event, error) {
 	return res, nil
 }
 
-func (p *Processor) Process(event commands.Event) error {
+func (p *Processor) Process(ctx context.Context, event commands.Event) error {
 	switch event.Type {
 	case commands.Message:
-		return p.processMessage(event)
+		return p.processMessage(ctx, event)
 	case commands.Unknown:
 		return ErrUnknownEventType
 	}
@@ -132,7 +118,7 @@ func (p *Processor) Close() {
 	close(p.usersShareTweet)
 }
 
-func (p *Processor) processMessage(e commands.Event) error {
+func (p *Processor) processMessage(ctx context.Context, e commands.Event) error {
 	meta, err := meta(e)
 	if err != nil {
 		return err
@@ -140,7 +126,7 @@ func (p *Processor) processMessage(e commands.Event) error {
 
 	p.usersChan <- meta.Username
 
-	if err := p.doCmd(e.Text, meta.ChatId, meta.Username, meta.UserId); err != nil {
+	if err := p.doCmd(ctx, e.Text, meta.ChatId, meta.Username, meta.UserId); err != nil {
 		return err
 	}
 
