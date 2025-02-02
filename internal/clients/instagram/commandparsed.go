@@ -40,6 +40,9 @@ func (p CommandParser) Parse(text string) (commands.ParsedCmdUrl, error) {
 	if path[0] == "" {
 		return commands.ParsedCmdUrl{}, errors.New("media type is empty")
 	}
+	if len(path) <= 1 {
+		return commands.ParsedCmdUrl{}, errors.New("media id is empty")
+	}
 	switch path[0] {
 	case "reel":
 		fallthrough

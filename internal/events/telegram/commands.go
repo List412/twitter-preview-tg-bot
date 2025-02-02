@@ -215,7 +215,18 @@ func (p *Processor) send(ctx context.Context, chatId int, cmd commands.Cmd, cmdU
 		return errors.Wrap(err, "contentManager.GetContent")
 	}
 
-	err = p.sendContentAsMessage(chatId, content)
+	// simple stupid retry
+	attempt := 0
+	for {
+		attempt++
+		err = p.sendContentAsMessage(chatId, content)
+		if err == nil || attempt > 3 {
+			break
+		}
+		slog.ErrorContext(ctx, "sendContentAsMessage failed, retrying in 1 sec...", "err", err)
+		time.Sleep(1 * time.Second)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "sendContentAsMessage")
 	}

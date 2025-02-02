@@ -95,6 +95,14 @@ func TestCommandParser_Parse(t *testing.T) {
 			want:    commands.ParsedCmdUrl{},
 			wantErr: true,
 		},
+		{
+			name: "user page",
+			args: args{
+				text: "https://www.instagram.com/kate616706",
+			},
+			want:    commands.ParsedCmdUrl{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
