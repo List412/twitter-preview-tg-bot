@@ -113,7 +113,7 @@ func (m Mapper) getMedia(tweet TweetData) (tgTypes.Media, error) {
 			result.Photos = append(result.Photos, tgTypes.MediaObject{
 				Url:        media.MediaUrlHttps,
 				Name:       media.MediaKey,
-				NeedUpload: false,
+				NeedUpload: true,
 			})
 		case "animated_gif":
 			fallthrough

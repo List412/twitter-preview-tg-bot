@@ -46,6 +46,10 @@ func (c Client) DoRequest(ctx context.Context, host string, method string, query
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("error while making request: %s, status: %s", method, resp.Status)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while reading response %s body", method)

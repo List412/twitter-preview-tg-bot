@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
@@ -40,6 +41,9 @@ const sendMessage = "sendMessage"
 const sendMediaGroup = "sendMediaGroup"
 const sendPhoto = "sendPhoto"
 const sendVideo = "sendVideo"
+
+const getChat = "getChat"
+const leaveChat = "leaveChat"
 
 func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 	q := url.Values{}
@@ -164,6 +168,41 @@ func (c *Client) SendVideo(chatId int, text string, video tgTypes.MediaObject) e
 	}
 
 	return nil
+}
+
+func (c *Client) LeaveChat(ctx context.Context, chatId int) error {
+	q := url.Values{}
+	q.Add("chat_id", strconv.Itoa(chatId))
+
+	resp, err := c.get(leaveChat, q)
+	if err != nil {
+		return err
+	}
+
+	_ = resp
+
+	return nil
+}
+
+func (c *Client) GetChat(ctx context.Context, id int) (ChatFullInfo, error) {
+	q := url.Values{}
+	q.Add("chat_id", strconv.Itoa(id))
+
+	resp, err := c.get(getChat, q)
+	if err != nil {
+		return ChatFullInfo{}, err
+	}
+
+	chatInfo := ChatFullInfo{}
+	if err := json.Unmarshal(resp, &chatInfo); err != nil {
+		return ChatFullInfo{}, err
+	}
+
+	if !chatInfo.Ok {
+		return chatInfo, errors.New("invalid response")
+	}
+
+	return chatInfo, nil
 }
 
 func (c *Client) do(req *http.Request) ([]byte, error) {

@@ -17,7 +17,7 @@ import (
 )
 
 var AllCommands = []commands.Cmd{
-	commands.RndCmd, commands.HelpCmd, commands.StartCmd, commands.StatsCmd,
+	commands.RndCmd, commands.HelpCmd, commands.StartCmd, commands.StatsCmd, commands.LeaveChat,
 }
 
 var ErrorUnknownCommand = errors.New("unknown command")
@@ -41,7 +41,34 @@ func isChatIdInTestGroup(chatId int, userId int) bool {
 	return false
 }
 
-func (p *Processor) doCmd(ctx context.Context, text string, chatId int, username string, userId int) error {
+func (p *Processor) checkPermissions(ctx context.Context, chatId int) error {
+	chatInfo, err := p.tg.GetChat(ctx, chatId)
+	if err != nil {
+		return errors.Wrap(err, "failed to get chat info")
+	}
+
+	permissions := chatInfo.Result.Permissions
+
+	if !permissions.CanSendMessages {
+		return errors.New("not allowed to send messages")
+	}
+
+	if !permissions.CanSendPhotos {
+		return errors.New("not allowed to send photos")
+	}
+
+	if !permissions.CanSendVideos {
+		return errors.New("not allowed to send videos")
+	}
+
+	if !permissions.CanSendMediaMessages {
+		return errors.New("not allowed to send media messages")
+	}
+
+	return nil
+}
+
+func (p *Processor) doCmd(ctx context.Context, text string, chatId int, chatname, username string, userId int) error {
 	defer p.recoverPanic(text, chatId, username)
 
 	text = strings.TrimSpace(text)
@@ -64,7 +91,7 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatId int, username
 	case commands.TikTokCmd:
 		fallthrough
 	case commands.InstagramCmd:
-		slog.InfoContext(ctx, "got new command", "cmd", cmd, "command", text, "userId", userId, "chatId", chatId)
+		slog.InfoContext(ctx, "got new command", "cmd", cmd, "command", text, slog.Group("chat", "id", chatId, "name", chatname), slog.Group("user", "id", userId, "name", username))
 		return p.sendContentOrHandleError(ctx, chatId, cmd, parsed, username)
 	case commands.StartCmd:
 		return p.sendStart(chatId, username)
@@ -74,6 +101,8 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatId int, username
 		return p.sendRandom(chatId, username)
 	case commands.StatsCmd:
 		return p.sendStats(chatId, userId)
+	case commands.LeaveChat:
+		return p.leaveChat(ctx, userId, text)
 	default:
 		return nil
 	}
@@ -161,11 +190,15 @@ func timeTrack(ctx context.Context, start time.Time, name string) {
 
 func (p *Processor) sendContentOrHandleError(ctx context.Context, chatId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl, username string) error {
 	err := p.send(ctx, chatId, cmd, cmdUrl)
+	var err2 error
 	if errors.Is(err, telegram.ErrNoEnoughRightToSendPhoto) {
-		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided link. Please allow sending photos in the chat settings.</i>")
+		err2 = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided link. Please allow sending photos in the chat settings.</i>")
 	}
 	if errors.Is(err, telegram.ErrNoEnoughRightToSendVideo) {
-		_ = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided link. Please allow sending video in the chat settings.</i>")
+		err2 = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided link. Please allow sending video in the chat settings.</i>")
+	}
+	if err2 != nil {
+		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err2)
 	}
 	if err != nil {
 		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err)
@@ -331,6 +364,33 @@ func (p *Processor) sendRandom(chatId int, username string) error {
 	if err := p.tg.SendMessage(chatId, fmt.Sprintf("random %d", n)); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (p *Processor) leaveChat(ctx context.Context, userId int, text string) error {
+	slog.InfoContext(ctx, text)
+	isAdmin, err := p.users.IsAdmin(userId)
+	if err != nil {
+		return errors.Wrap(err, "IsAdmin")
+	}
+	if !isAdmin {
+		return nil
+	}
+
+	text = strings.TrimSpace(strings.Replace(text, string(commands.LeaveChat), "", 1))
+
+	chatId, err := strconv.Atoi(text)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse chat id")
+	}
+
+	err = p.tg.LeaveChat(ctx, chatId)
+	if err != nil {
+		return errors.Wrap(err, "failed to leave chat")
+	}
+
+	_ = p.tg.SendMessage(userId, fmt.Sprintf("bot left chat %d", chatId))
 
 	return nil
 }

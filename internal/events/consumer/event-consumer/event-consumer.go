@@ -66,7 +66,7 @@ func (c *consumer) handleEvents(eventsBatch []commands.Event) {
 			ctx := context.Background()
 			ctx = context.WithValue(ctx, logger.CtxUUID{}, Rand(4))
 			if err := c.processor.Process(ctx, event); err != nil {
-				slog.Error("can't handle event", "error", err.Error())
+				slog.Error("can't handle event", "error", err.Error(), "event", event)
 			}
 		}(event)
 	}

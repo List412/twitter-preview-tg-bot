@@ -37,6 +37,7 @@ type Meta struct {
 	ChatId   int
 	Username string
 	UserId   int
+	ChatName string
 }
 
 type ContentManager interface {
@@ -126,7 +127,7 @@ func (p *Processor) processMessage(ctx context.Context, e commands.Event) error 
 
 	p.usersChan <- meta.Username
 
-	if err := p.doCmd(ctx, e.Text, meta.ChatId, meta.Username, meta.UserId); err != nil {
+	if err := p.doCmd(ctx, e.Text, meta.ChatId, meta.ChatName, meta.Username, meta.UserId); err != nil {
 		return err
 	}
 
@@ -154,7 +155,9 @@ func event(u telegram.Update) commands.Event {
 			ChatId:   u.Message.Chat.ID,
 			Username: u.Message.From.Username,
 			UserId:   u.Message.From.Id,
+			ChatName: u.Message.Chat.Title,
 		}
+		res.Lang = u.Message.From.LanguageCode
 	}
 
 	return res

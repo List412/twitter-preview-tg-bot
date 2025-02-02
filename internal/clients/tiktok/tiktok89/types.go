@@ -105,55 +105,26 @@ type VideoParsed struct {
 	TtsVoiceIds          interface{}   `json:"tts_voice_ids"`
 	TttProductRecallType int           `json:"ttt_product_recall_type"`
 
-	UserDigged int `json:"user_digged"`
-	Video      struct {
-		BigThumbs []interface{} `json:"big_thumbs"`
-		BitRate   []struct {
-			HDRBit    string      `json:"HDR_bit"`
-			HDRType   string      `json:"HDR_type"`
-			BitRate   int         `json:"bit_rate"`
-			DubInfos  interface{} `json:"dub_infos"`
-			GearName  string      `json:"gear_name"`
-			IsBytevc1 int         `json:"is_bytevc1"`
-			IsH265    int         `json:"is_h265"`
-			PlayAddr  struct {
-				DataSize  int         `json:"data_size"`
-				FileCs    string      `json:"file_cs"`
-				FileHash  string      `json:"file_hash"`
-				Height    int         `json:"height"`
-				Uri       string      `json:"uri"`
-				UrlKey    string      `json:"url_key"`
-				UrlList   []string    `json:"url_list"`
-				UrlPrefix interface{} `json:"url_prefix"`
-				Width     int         `json:"width"`
-			} `json:"play_addr"`
-			QualityType int    `json:"quality_type"`
-			VideoExtra  string `json:"video_extra"`
-		} `json:"bit_rate"`
-		BitRateAudio  []interface{} `json:"bit_rate_audio"`
-		CdnUrlExpired int           `json:"cdn_url_expired"`
+	UserDigged int   `json:"user_digged"`
+	Video      Video `json:"video"`
 
-		DownloadAddr struct {
-			DataSize  int         `json:"data_size"`
-			Height    int         `json:"height"`
-			Uri       string      `json:"uri"`
-			UrlList   []string    `json:"url_list"`
-			UrlPrefix interface{} `json:"url_prefix"`
-			Width     int         `json:"width"`
-		} `json:"download_addr"`
-
-		Duration int `json:"duration"`
-
-		HasDownloadSuffixLogoAddr bool   `json:"has_download_suffix_logo_addr"`
-		HasWatermark              bool   `json:"has_watermark"`
-		Height                    int    `json:"height"`
-		IsBytevc1                 int    `json:"is_bytevc1"`
-		IsCallback                bool   `json:"is_callback"`
-		IsH265                    int    `json:"is_h265"`
-		Meta                      string `json:"meta"`
-		MiscDownloadAddrs         string `json:"misc_download_addrs"`
-
-		PlayAddr struct {
+	VideoLabels          []interface{} `json:"video_labels"`
+	VideoText            []interface{} `json:"video_text"`
+	VoiceFilterIds       interface{}   `json:"voice_filter_ids"`
+	WithPromotionalMusic bool          `json:"with_promotional_music"`
+	WithoutWatermark     bool          `json:"without_watermark"`
+}
+type Video struct {
+	BigThumbs []interface{} `json:"big_thumbs"`
+	BitRate   []struct {
+		HDRBit    string      `json:"HDR_bit"`
+		HDRType   string      `json:"HDR_type"`
+		BitRate   int         `json:"bit_rate"`
+		DubInfos  interface{} `json:"dub_infos"`
+		GearName  string      `json:"gear_name"`
+		IsBytevc1 int         `json:"is_bytevc1"`
+		IsH265    int         `json:"is_h265"`
+		PlayAddr  struct {
 			DataSize  int         `json:"data_size"`
 			FileCs    string      `json:"file_cs"`
 			FileHash  string      `json:"file_hash"`
@@ -164,15 +135,45 @@ type VideoParsed struct {
 			UrlPrefix interface{} `json:"url_prefix"`
 			Width     int         `json:"width"`
 		} `json:"play_addr"`
-		Ratio         string      `json:"ratio"`
-		SourceHDRType int         `json:"source_HDR_type"`
-		Tags          interface{} `json:"tags"`
-		Width         int         `json:"width"`
-	} `json:"video"`
+		QualityType int    `json:"quality_type"`
+		VideoExtra  string `json:"video_extra"`
+	} `json:"bit_rate"`
+	BitRateAudio  []interface{} `json:"bit_rate_audio"`
+	CdnUrlExpired int           `json:"cdn_url_expired"`
 
-	VideoLabels          []interface{} `json:"video_labels"`
-	VideoText            []interface{} `json:"video_text"`
-	VoiceFilterIds       interface{}   `json:"voice_filter_ids"`
-	WithPromotionalMusic bool          `json:"with_promotional_music"`
-	WithoutWatermark     bool          `json:"without_watermark"`
+	DownloadAddr struct {
+		DataSize  int         `json:"data_size"`
+		Height    int         `json:"height"`
+		Uri       string      `json:"uri"`
+		UrlList   []string    `json:"url_list"`
+		UrlPrefix interface{} `json:"url_prefix"`
+		Width     int         `json:"width"`
+	} `json:"download_addr"`
+
+	Duration int `json:"duration"`
+
+	HasDownloadSuffixLogoAddr bool   `json:"has_download_suffix_logo_addr"`
+	HasWatermark              bool   `json:"has_watermark"`
+	Height                    int    `json:"height"`
+	IsBytevc1                 int    `json:"is_bytevc1"`
+	IsCallback                bool   `json:"is_callback"`
+	IsH265                    int    `json:"is_h265"`
+	Meta                      string `json:"meta"`
+	MiscDownloadAddrs         string `json:"misc_download_addrs"`
+
+	PlayAddr struct {
+		DataSize  int         `json:"data_size"`
+		FileCs    string      `json:"file_cs"`
+		FileHash  string      `json:"file_hash"`
+		Height    int         `json:"height"`
+		Uri       string      `json:"uri"`
+		UrlKey    string      `json:"url_key"`
+		UrlList   []string    `json:"url_list"`
+		UrlPrefix interface{} `json:"url_prefix"`
+		Width     int         `json:"width"`
+	} `json:"play_addr"`
+	Ratio         string      `json:"ratio"`
+	SourceHDRType int         `json:"source_HDR_type"`
+	Tags          interface{} `json:"tags"`
+	Width         int         `json:"width"`
 }

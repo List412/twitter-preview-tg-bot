@@ -5,6 +5,7 @@ type Type int
 type Event struct {
 	Type Type
 	Text string
+	Lang string
 	Meta interface{}
 }
 
@@ -14,10 +15,11 @@ const (
 )
 
 const (
-	RndCmd   Cmd = "/rnd"
-	HelpCmd  Cmd = "/help"
-	StartCmd Cmd = "/start"
-	StatsCmd Cmd = "/stats"
+	RndCmd    Cmd = "/rnd"
+	HelpCmd   Cmd = "/help"
+	StartCmd  Cmd = "/start"
+	StatsCmd  Cmd = "/stats"
+	LeaveChat Cmd = "/leavechat"
 )
 
 const TweetCmd Cmd = "tweet"

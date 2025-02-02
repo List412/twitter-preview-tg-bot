@@ -19,12 +19,14 @@ type IncomingMessage struct {
 }
 
 type User struct {
-	Id       int    `json:"id"`
-	Username string `json:"username"`
+	Id           int    `json:"id"`
+	Username     string `json:"username"`
+	LanguageCode string `json:"language_code"`
 }
 
 type Chat struct {
-	ID int `json:"id"`
+	ID    int    `json:"id"`
+	Title string `json:"title"`
 }
 
 type MediaObject struct {
@@ -47,4 +49,34 @@ type Button struct {
 
 type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]Button `json:"inline_keyboard"`
+}
+
+type ChatFullInfo struct {
+	Ok     bool `json:"ok"`
+	Result struct {
+		Id                int64  `json:"id"`
+		Title             string `json:"title"`
+		Type              string `json:"type"`
+		HasVisibleHistory bool   `json:"has_visible_history"`
+		Permissions       struct {
+			CanSendMessages       bool `json:"can_send_messages"`
+			CanSendMediaMessages  bool `json:"can_send_media_messages"`
+			CanSendAudios         bool `json:"can_send_audios"`
+			CanSendDocuments      bool `json:"can_send_documents"`
+			CanSendPhotos         bool `json:"can_send_photos"`
+			CanSendVideos         bool `json:"can_send_videos"`
+			CanSendVideoNotes     bool `json:"can_send_video_notes"`
+			CanSendVoiceNotes     bool `json:"can_send_voice_notes"`
+			CanSendPolls          bool `json:"can_send_polls"`
+			CanSendOtherMessages  bool `json:"can_send_other_messages"`
+			CanAddWebPagePreviews bool `json:"can_add_web_page_previews"`
+			CanChangeInfo         bool `json:"can_change_info"`
+			CanInviteUsers        bool `json:"can_invite_users"`
+			CanPinMessages        bool `json:"can_pin_messages"`
+			CanManageTopics       bool `json:"can_manage_topics"`
+		} `json:"permissions"`
+		JoinToSendMessages bool `json:"join_to_send_messages"`
+		MaxReactionCount   int  `json:"max_reaction_count"`
+		AccentColorId      int  `json:"accent_color_id"`
+	} `json:"result"`
 }
