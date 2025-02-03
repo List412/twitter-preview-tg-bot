@@ -18,6 +18,8 @@ type Repository interface {
 	Get(ctx context.Context, userName string) error
 	All(ctx context.Context, limit int, offset int) error
 	Count(ctx context.Context) (int64, error)
+	CountByTime(ctx context.Context, t time.Time) (int, error)
+	RefreshDate(ctx context.Context, userName string) error
 }
 
 type ShareRepository interface {
@@ -73,7 +75,12 @@ func (s Service) Add(ctx context.Context, userName string) error {
 	if !s.IsExist(ctx, userName) {
 		err := s.users.Add(ctx, userName)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Add")
+		}
+	} else {
+		err := s.users.RefreshDate(ctx, userName)
+		if err != nil {
+			return errors.Wrap(err, "refresh date")
 		}
 	}
 	return nil
@@ -131,6 +138,21 @@ func (s Service) CountActiveUsers(ctx context.Context) (int, int, error) {
 		return 0, 0, err
 	}
 	dau, err := s.usersShare.CountByTime(ctx, d)
+	if err != nil {
+		return mau, 0, err
+	}
+	return mau, dau, nil
+}
+
+func (s Service) CountPassiveUsers(ctx context.Context) (int, int, error) {
+	m := time.Now().AddDate(0, -1, 0)
+	d := time.Now().AddDate(0, 0, -1)
+
+	mau, err := s.users.CountByTime(ctx, m)
+	if err != nil {
+		return 0, 0, err
+	}
+	dau, err := s.users.CountByTime(ctx, d)
 	if err != nil {
 		return mau, 0, err
 	}
