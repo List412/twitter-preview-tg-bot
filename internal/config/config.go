@@ -38,6 +38,7 @@ type Config struct {
 	Socialapi1Instagram   Socialapi1Instagram
 	InstagramScrapper     InstagramScrapper
 	InstagramBulkScrapper InstagramBulkScrapper
+	SaveInsta1            SaveInsta1
 	RapidApi              RapidApi
 }
 
@@ -85,6 +86,10 @@ type InstagramScrapper struct {
 
 type InstagramBulkScrapper struct {
 	Host string `env:"INSTAGRAMBULKSCRAPPER_HOST"`
+}
+
+type SaveInsta1 struct {
+	Host string `env:"SAVEINSTA1_HOST"`
 }
 
 type RapidApi struct {

@@ -116,7 +116,9 @@ func generateHeader(tweet tgTypes.TweetThread) string {
 		action = "posted"
 	}
 
-	result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) %s:\n", tweet.UserName, tweet.UserId, action)
+	if tweet.UserName != "" || tweet.UserId != "" {
+		result += fmt.Sprintf("<b>%s</b>(<i>%s</i>) %s:\n", tweet.UserName, tweet.UserId, action)
+	}
 
 	twTime := tweet.Time.Format("15:04 · 2 Jan 2006")
 
