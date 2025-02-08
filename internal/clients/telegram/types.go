@@ -54,6 +54,17 @@ type InlineKeyboardMarkup struct {
 type ChatFullInfo struct {
 	Ok     bool `json:"ok"`
 	Result struct {
+		FirstName       string   `json:"first_name"`
+		LastName        string   `json:"last_name"`
+		Username        string   `json:"username"`
+		CanSendGift     bool     `json:"can_send_gift"`
+		ActiveUsernames []string `json:"active_usernames"`
+		Photo           struct {
+			SmallFileId       string `json:"small_file_id"`
+			SmallFileUniqueId string `json:"small_file_unique_id"`
+			BigFileId         string `json:"big_file_id"`
+			BigFileUniqueId   string `json:"big_file_unique_id"`
+		} `json:"photo"`
 		Id                int64  `json:"id"`
 		Title             string `json:"title"`
 		Type              string `json:"type"`

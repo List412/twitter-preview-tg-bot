@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"html"
@@ -17,7 +18,7 @@ import (
 )
 
 var AllCommands = []commands.Cmd{
-	commands.RndCmd, commands.HelpCmd, commands.StartCmd, commands.StatsCmd, commands.LeaveChat,
+	commands.RndCmd, commands.HelpCmd, commands.StartCmd, commands.StatsCmd, commands.LeaveChat, commands.ChatInfo,
 }
 
 var ErrorUnknownCommand = errors.New("unknown command")
@@ -103,6 +104,8 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatId int, chatname
 		return p.sendStats(chatId, userId)
 	case commands.LeaveChat:
 		return p.leaveChat(ctx, userId, text)
+	case commands.ChatInfo:
+		return p.chatInfo(ctx, text, chatId, userId)
 	default:
 		return nil
 	}
@@ -378,6 +381,36 @@ func (p *Processor) sendRandom(chatId int, username string) error {
 		return err
 	}
 
+	return nil
+}
+
+func (p *Processor) chatInfo(ctx context.Context, text string, sendTo int, requestedBy int) error {
+	isAdmin, err := p.users.IsAdmin(requestedBy)
+	if err != nil {
+		return errors.Wrap(err, "IsAdmin")
+	}
+	if !isAdmin {
+		return nil
+	}
+
+	text = strings.TrimSpace(strings.Replace(text, string(commands.ChatInfo), "", 1))
+
+	chatId, err := strconv.Atoi(text)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse chat id")
+	}
+
+	chat, err := p.tg.GetChat(ctx, chatId)
+	if err != nil {
+		return errors.Wrap(err, "failed to get chat info")
+	}
+
+	chatJson, err := json.MarshalIndent(chat, "", "    ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal chat info")
+	}
+
+	_ = p.tg.SendMessage(sendTo, fmt.Sprintf("chat info: \n <pre>%s</pre>", string(chatJson)))
 	return nil
 }
 

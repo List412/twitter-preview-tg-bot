@@ -20,6 +20,7 @@ const (
 	StartCmd  Cmd = "/start"
 	StatsCmd  Cmd = "/stats"
 	LeaveChat Cmd = "/leavechat"
+	ChatInfo  Cmd = "/chatinfo"
 )
 
 const TweetCmd Cmd = "tweet"
