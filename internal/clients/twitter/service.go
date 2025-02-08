@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"log/slog"
+	"reflect"
 	"runtime/debug"
 	"time"
 	"tweets-tg-bot/internal/commands"
@@ -34,7 +35,7 @@ func (s *Service) GetContent(ctx context.Context, urlCmd commands.ParsedCmdUrl) 
 		for _, api := range s.apis {
 			result, err := s.getTweetOrError(ctx, api, urlCmd)
 			if err != nil {
-				slog.Error("getTweetOrError", "error", err)
+				slog.Error("getTweetOrError", "error", err, "api", reflect.TypeOf(api).String())
 				continue
 			}
 			result.Source = "twitter"

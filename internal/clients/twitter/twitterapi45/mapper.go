@@ -1,6 +1,7 @@
 package twitterapi45
 
 import (
+	"github.com/pkg/errors"
 	"strconv"
 	"time"
 	"tweets-tg-bot/internal/downloader"
@@ -26,26 +27,48 @@ func Map(parsedTweet *Response) (tgTypes.TweetThread, error) {
 	}
 	tweet.Time = tweetTime
 
-	for _, photo := range parsedTweet.Media.Photo {
-		media := tgTypes.MediaObject{
-			Url:        photo.MediaUrlHttps,
-			Name:       photo.Id,
-			NeedUpload: false,
+	if parsedTweet.Media.Photo == nil && parsedTweet.Media.Video == nil {
+		for _, media := range parsedTweet.Entities.Media {
+			if media.Type == "photo" {
+				tweetContent.Media.Photos = append(tweetContent.Media.Photos, tgTypes.MediaObject{
+					Url:        media.MediaUrlHttps,
+					Name:       media.IdStr,
+					NeedUpload: false,
+				})
+			} else {
+				videoVarian, err := getVideoFromVariants(media.VideoInfo.Variants)
+				if err != nil {
+					return tweet, errors.Wrap(err, "error getting video variant")
+				}
+				tweetContent.Media.Videos = append(tweetContent.Media.Videos, tgTypes.MediaObject{
+					Url:        videoVarian.Url,
+					Name:       media.IdStr,
+					NeedUpload: true,
+				})
+			}
 		}
-		tweetContent.Media.Photos = append(tweetContent.Media.Photos, media)
-	}
+	} else {
+		for _, photo := range parsedTweet.Media.Photo {
+			media := tgTypes.MediaObject{
+				Url:        photo.MediaUrlHttps,
+				Name:       photo.Id,
+				NeedUpload: false,
+			}
+			tweetContent.Media.Photos = append(tweetContent.Media.Photos, media)
+		}
 
-	for i, video := range parsedTweet.Media.Video {
-		variant, err := getVideoFromVariants(video.Variants)
-		if err != nil {
-			return tgTypes.TweetThread{}, err
+		for i, video := range parsedTweet.Media.Video {
+			variant, err := getVideoFromVariants(video.Variants)
+			if err != nil {
+				return tgTypes.TweetThread{}, err
+			}
+			media := tgTypes.MediaObject{
+				Name:       variant.ContentType + "_" + strconv.Itoa(i),
+				Url:        variant.Url,
+				NeedUpload: true,
+			}
+			tweetContent.Media.Videos = append(tweetContent.Media.Videos, media)
 		}
-		media := tgTypes.MediaObject{
-			Name:       variant.ContentType + "_" + strconv.Itoa(i),
-			Url:        variant.Url,
-			NeedUpload: true,
-		}
-		tweetContent.Media.Videos = append(tweetContent.Media.Videos, media)
 	}
 
 	tweet.Tweets = append(tweet.Tweets, tweetContent)
