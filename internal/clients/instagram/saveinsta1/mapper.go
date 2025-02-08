@@ -13,11 +13,8 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 		return tweet, errors.New("empty post.Result")
 	}
 
-	content := tgTypes.TweetContent{}
-	media := tgTypes.Media{}
-
 	mediaCode := "name"
-
+	media := tgTypes.Media{}
 	for i, result := range post.Result {
 		if i == 0 {
 			tweet.Time = time.Unix(int64(result.Meta.TakenAt), 0)
@@ -45,8 +42,37 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 		}
 	}
 
-	content.Media = media
-	tweet.Tweets = append(tweet.Tweets, content)
+	for _, photoChunk := range chunkMedia(media.Photos, 10) {
+		content := tgTypes.TweetContent{}
+		mediaChunk := tgTypes.Media{}
+
+		mediaChunk.Photos = photoChunk
+
+		content.Media = mediaChunk
+		tweet.Tweets = append(tweet.Tweets, content)
+	}
+
+	for _, videoChunk := range chunkMedia(media.Videos, 10) {
+		content := tgTypes.TweetContent{}
+		mediaChunk := tgTypes.Media{}
+
+		mediaChunk.Videos = videoChunk
+
+		content.Media = mediaChunk
+		tweet.Tweets = append(tweet.Tweets, content)
+	}
 
 	return tweet, nil
+}
+
+func chunkMedia(media []tgTypes.MediaObject, length int) [][]tgTypes.MediaObject {
+	var result [][]tgTypes.MediaObject
+
+	mediaIndex := 0
+	for mediaIndex < len(media) {
+		chunkLength := min(length, len(media[mediaIndex:]))
+		result = append(result, media[mediaIndex:mediaIndex+chunkLength])
+		mediaIndex += chunkLength
+	}
+	return result
 }
