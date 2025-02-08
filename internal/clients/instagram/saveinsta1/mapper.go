@@ -14,6 +14,7 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 	}
 
 	mediaCode := "name"
+	text := ""
 	media := tgTypes.Media{}
 	for i, result := range post.Result {
 		if i == 0 {
@@ -21,6 +22,7 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 			tweet.Likes = result.Meta.LikeCount
 			tweet.Replies = result.Meta.CommentCount
 
+			text = result.Meta.Title
 			mediaCode = result.Meta.Shortcode
 		}
 
@@ -60,6 +62,14 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 
 		content.Media = mediaChunk
 		tweet.Tweets = append(tweet.Tweets, content)
+	}
+
+	if tweet.Tweets == nil {
+		tweet.Tweets = append(tweet.Tweets, tgTypes.TweetContent{
+			Text: text,
+		})
+	} else {
+		tweet.Tweets[0].Text = text
 	}
 
 	return tweet, nil
