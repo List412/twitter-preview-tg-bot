@@ -12,7 +12,7 @@ import (
 )
 
 type Api interface {
-	GetPost(ctx context.Context, id string) (tgTypes.TweetThread, error)
+	GetPost(ctx context.Context, id commands.ParsedCmdUrl) (tgTypes.TweetThread, error)
 }
 
 type Service struct {
@@ -56,5 +56,5 @@ func (s *Service) getPostOrError(ctx context.Context, api Api, cmdUrl commands.P
 		}
 	}()
 
-	return api.GetPost(ctx, cmdUrl.StrippedUrl)
+	return api.GetPost(ctx, cmdUrl)
 }

@@ -39,6 +39,7 @@ type Config struct {
 	InstagramScrapper     InstagramScrapper
 	InstagramBulkScrapper InstagramBulkScrapper
 	SaveInsta1            SaveInsta1
+	ProfileAndMedia       ProfileAndMedia
 	RapidApi              RapidApi
 }
 
@@ -74,6 +75,10 @@ type TikTok89 struct {
 
 type TikTokScrapper7 struct {
 	Host string `env:"TIKTOK_SCRAPPER7_HOST"`
+}
+
+type ProfileAndMedia struct {
+	Host string `env:"PROFILEANDMEDIA_HOST"`
 }
 
 type Socialapi1Instagram struct {

@@ -17,9 +17,8 @@ import (
 	"syscall"
 	"tweets-tg-bot/internal/clients"
 	"tweets-tg-bot/internal/clients/instagram"
-	"tweets-tg-bot/internal/clients/instagram/instagramscrapper"
+	"tweets-tg-bot/internal/clients/instagram/profileandmedia"
 	"tweets-tg-bot/internal/clients/instagram/saveinsta1"
-	"tweets-tg-bot/internal/clients/instagram/socialapi1instagram"
 	"tweets-tg-bot/internal/clients/rapidApi"
 	tgClient "tweets-tg-bot/internal/clients/telegram"
 	tiktok2 "tweets-tg-bot/internal/clients/tiktok"
@@ -128,11 +127,11 @@ func main() {
 	ttService := tiktok2.NewService()
 	ttService.RegisterApi(tiktokService, tiktok7Service)
 
-	instagramSocialApiClient := socialapi1instagram.NewClient(rapidApiClient, cfg.Socialapi1Instagram.Host)
-	instagramSocialApiService := socialapi1instagram.NewService(instagramSocialApiClient)
-
-	instagramscrapperClient := instagramscrapper.NewClient(rapidApiClient, cfg.InstagramScrapper.Host)
-	instagramscrapperService := instagramscrapper.NewService(instagramscrapperClient)
+	//instagramSocialApiClient := socialapi1instagram.NewClient(rapidApiClient, cfg.Socialapi1Instagram.Host)
+	//instagramSocialApiService := socialapi1instagram.NewService(instagramSocialApiClient)
+	//
+	//instagramscrapperClient := instagramscrapper.NewClient(rapidApiClient, cfg.InstagramScrapper.Host)
+	//instagramscrapperService := instagramscrapper.NewService(instagramscrapperClient)
 
 	//instagrambulkscrapperClient := instagrambulkscrapper.NewClient(rapidApiClient, cfg.InstagramBulkScrapper.Host)
 	//instagrambulkscrapperService := instagrambulkscrapper.NewService(instagrambulkscrapperClient)
@@ -140,9 +139,13 @@ func main() {
 	saveinstaClient := saveinsta1.NewClient(rapidApiClient, cfg.SaveInsta1.Host)
 	saveinstaService := saveinsta1.NewService(saveinstaClient)
 
+	profileandmediaClient := profileandmedia.NewClient(rapidApiClient, cfg.ProfileAndMedia.Host)
+	profileandmediaService := profileandmedia.NewService(profileandmediaClient)
+
 	instaService := instagram.NewService()
-	instaService.RegisterApi(instagramscrapperService)
-	instaService.RegisterApi(instagramSocialApiService)
+	//instaService.RegisterApi(instagramscrapperService)
+	//instaService.RegisterApi(instagramSocialApiService)
+	instaService.RegisterApi(profileandmediaService)
 	instaService.RegisterApi(saveinstaService)
 
 	contentProviderManager := clients.NewManager()

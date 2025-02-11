@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"net/http"
@@ -68,7 +69,7 @@ func FileSize(url string) (uint64, error) {
 	contentLength := resp.Header.Get("Content-Length")
 	result, err := strconv.ParseUint(contentLength, 10, 64)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("invalid content length")
 	}
 
 	return result, nil

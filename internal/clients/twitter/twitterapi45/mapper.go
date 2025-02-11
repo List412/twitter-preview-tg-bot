@@ -80,7 +80,8 @@ func getVideoFromVariants(variants []Variant) (Variant, error) {
 		if variants[i].ContentType == "video/mp4" {
 			size, err := downloader.FileSize(variants[i].Url)
 			if err != nil {
-				return Variant{}, err
+				continue
+				//return Variant{}, errors.Wrap(err, "downloader.FileSize")
 			}
 
 			if size <= 50*1024*1024 {

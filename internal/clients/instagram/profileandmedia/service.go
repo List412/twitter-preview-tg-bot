@@ -1,4 +1,4 @@
-package instagrambulkscrapper
+package profileandmedia
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func NewService(client *Client) *Service {
 }
 
 func (s Service) GetPost(ctx context.Context, id commands.ParsedCmdUrl) (tgTypes.TweetThread, error) {
-	response, err := s.client.GetVideo(ctx, id.StrippedUrl)
+	response, err := s.client.GetVideo(ctx, id.Key)
 	if err != nil {
 		return tgTypes.TweetThread{}, errors.Wrap(err, "get post")
 	}
