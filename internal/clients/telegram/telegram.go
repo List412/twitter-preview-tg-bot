@@ -43,6 +43,7 @@ const sendPhoto = "sendPhoto"
 const sendVideo = "sendVideo"
 
 const getChat = "getChat"
+const getChatAdmins = "getChatAdministrators"
 const leaveChat = "leaveChat"
 
 func (c *Client) Updates(offset int, limit int) ([]Update, error) {
@@ -196,6 +197,27 @@ func (c *Client) GetChat(ctx context.Context, id int) (ChatFullInfo, error) {
 	chatInfo := ChatFullInfo{}
 	if err := json.Unmarshal(resp, &chatInfo); err != nil {
 		return ChatFullInfo{}, err
+	}
+
+	if !chatInfo.Ok {
+		return chatInfo, errors.New("invalid response")
+	}
+
+	return chatInfo, nil
+}
+
+func (c *Client) GetChatAdmins(ctx context.Context, id int) (ChatAdmins, error) {
+	q := url.Values{}
+	q.Add("chat_id", strconv.Itoa(id))
+
+	resp, err := c.get(getChatAdmins, q)
+	if err != nil {
+		return ChatAdmins{}, err
+	}
+
+	chatInfo := ChatAdmins{}
+	if err := json.Unmarshal(resp, &chatInfo); err != nil {
+		return ChatAdmins{}, err
 	}
 
 	if !chatInfo.Ok {

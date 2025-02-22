@@ -16,6 +16,7 @@ func New(
 	contentManager ContentManager,
 	cmdParsers commands.Parsers,
 	users events.UsersServiceInterface,
+	botHandler string,
 ) *Processor {
 	usersChan := make(chan string, 10)
 	usersShareTweet := make(chan string, 10)
@@ -27,6 +28,7 @@ func New(
 		users:           users,
 		usersChan:       usersChan,
 		usersShareTweet: usersShareTweet,
+		botHandler:      botHandler,
 	}
 }
 
@@ -52,6 +54,7 @@ type Processor struct { //todo rename lol
 	users           events.UsersServiceInterface
 	usersChan       chan string
 	usersShareTweet chan string
+	botHandler      string
 }
 
 func (p *Processor) Fetch(limit int) ([]commands.Event, error) {

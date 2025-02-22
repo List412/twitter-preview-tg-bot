@@ -38,7 +38,7 @@ func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
 				media.Videos = append(media.Videos, tgTypes.MediaObject{
 					Name:       fmt.Sprintf("%s_%d_%d.mp4", mediaCode, i, j),
 					Url:        url.Url,
-					NeedUpload: false,
+					NeedUpload: true,
 				})
 			}
 		}

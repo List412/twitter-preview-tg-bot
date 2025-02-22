@@ -21,6 +21,14 @@ var AllCommands = []commands.Cmd{
 	commands.RndCmd, commands.HelpCmd, commands.StartCmd, commands.StatsCmd, commands.LeaveChat, commands.ChatInfo,
 }
 
+var AdminCommands = []commands.Cmd{
+	commands.StatsCmd, commands.LeaveChat, commands.ChatInfo,
+}
+
+var UserCommands = []commands.Cmd{
+	commands.RndCmd, commands.HelpCmd, commands.StartCmd,
+}
+
 var ErrorUnknownCommand = errors.New("unknown command")
 var ErrApiResponse = errors.New("api error")
 
@@ -411,6 +419,18 @@ func (p *Processor) chatInfo(ctx context.Context, text string, sendTo int, reque
 	}
 
 	_ = p.tg.SendMessage(sendTo, fmt.Sprintf("chat info: \n <pre>%s</pre>", string(chatJson)))
+
+	admins, err := p.tg.GetChatAdmins(ctx, chatId)
+	if err != nil {
+		return errors.Wrap(err, "failed to get chat admins")
+	}
+
+	adminsJson, err := json.MarshalIndent(admins, "", "    ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal chat admins")
+	}
+
+	_ = p.tg.SendMessage(sendTo, fmt.Sprintf("chat admins: \n <pre>%s</pre>", string(adminsJson)))
 	return nil
 }
 
@@ -514,7 +534,24 @@ func (p *Processor) parseCmd(text string) (commands.Cmd, commands.ParsedCmdUrl, 
 		return cmd, parsed, err
 	}
 
-	for _, cmd := range AllCommands {
+	for _, cmd := range UserCommands {
+		if len(text) < len(cmd)+1+len(p.botHandler) {
+			continue
+		}
+
+		cmdPart := text[:len(cmd)]
+		handlerPart := text[len(cmd) : len(cmd)+1+len(p.botHandler)]
+
+		if handlerPart != "@"+p.botHandler {
+			continue
+		}
+
+		if string(cmd) == cmdPart {
+			return cmd, commands.ParsedCmdUrl{}, nil
+		}
+	}
+
+	for _, cmd := range AdminCommands {
 		if len(text) < len(cmd) {
 			continue
 		}

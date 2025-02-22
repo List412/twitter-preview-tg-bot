@@ -41,6 +41,8 @@ type Config struct {
 	SaveInsta1            SaveInsta1
 	ProfileAndMedia       ProfileAndMedia
 	RapidApi              RapidApi
+
+	BotHandler string `env:"BOT_HANDLER"`
 }
 
 type Prometheus struct {
