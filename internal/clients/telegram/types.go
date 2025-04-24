@@ -13,9 +13,11 @@ type Update struct {
 }
 
 type IncomingMessage struct {
-	Text string `json:"text"`
-	From User   `json:"from"`
-	Chat Chat   `json:"chat"`
+	Text            string `json:"text"`
+	From            User   `json:"from"`
+	Chat            Chat   `json:"chat"`
+	MessageThreadId int    `json:"message_thread_id"`
+	IsTopicMessage  bool   `json:"is_topic_message"`
 }
 
 type User struct {

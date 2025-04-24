@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"html"
 	"log/slog"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+
 	"tweets-tg-bot/internal/clients/telegram"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/downloader"
@@ -77,7 +79,7 @@ func (p *Processor) checkPermissions(ctx context.Context, chatId int) error {
 	return nil
 }
 
-func (p *Processor) doCmd(ctx context.Context, text string, chatId int, chatname, username string, userId int) error {
+func (p *Processor) doCmd(ctx context.Context, text string, chatId, topicId int, chatname, username string, userId int) error {
 	defer p.recoverPanic(text, chatId, username)
 
 	text = strings.TrimSpace(text)
@@ -101,13 +103,13 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatId int, chatname
 		fallthrough
 	case commands.InstagramCmd:
 		slog.InfoContext(ctx, "got new command", "cmd", cmd, "command", text, slog.Group("chat", "id", chatId, "name", chatname), slog.Group("user", "id", userId, "name", username))
-		return p.sendContentOrHandleError(ctx, chatId, cmd, parsed, username)
+		return p.sendContentOrHandleError(ctx, chatId, topicId, cmd, parsed, username)
 	case commands.StartCmd:
-		return p.sendStart(chatId, username)
+		return p.sendStart(chatId, topicId, username)
 	case commands.HelpCmd:
-		return p.sendHelp(chatId, username)
+		return p.sendHelp(chatId, topicId, username)
 	case commands.RndCmd:
-		return p.sendRandom(chatId, username)
+		return p.sendRandom(chatId, topicId, username)
 	case commands.StatsCmd:
 		return p.sendStats(chatId, userId)
 	case commands.LeaveChat:
@@ -201,14 +203,14 @@ func timeTrack(ctx context.Context, start time.Time, name string) {
 	slog.InfoContext(ctx, "time", "func", name, "elapsed", elapsed.String())
 }
 
-func (p *Processor) sendContentOrHandleError(ctx context.Context, chatId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl, username string) error {
-	err := p.send(ctx, chatId, cmd, cmdUrl)
+func (p *Processor) sendContentOrHandleError(ctx context.Context, chatId, topicId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl, username string) error {
+	err := p.send(ctx, chatId, topicId, cmd, cmdUrl)
 	var err2 error
 	if errors.Is(err, telegram.ErrNoEnoughRightToSendPhoto) {
-		err2 = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided link. Please allow sending photos in the chat settings.</i>")
+		err2 = p.tg.SendMessage(chatId, topicId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided link. Please allow sending photos in the chat settings.</i>")
 	}
 	if errors.Is(err, telegram.ErrNoEnoughRightToSendVideo) {
-		err2 = p.tg.SendMessage(chatId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided link. Please allow sending video in the chat settings.</i>")
+		err2 = p.tg.SendMessage(chatId, topicId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided link. Please allow sending video in the chat settings.</i>")
 	}
 	if err2 != nil {
 		p.sendErrorToAdmin(cmdUrl.StrippedUrl, chatId, username, err2)
@@ -220,7 +222,7 @@ func (p *Processor) sendContentOrHandleError(ctx context.Context, chatId int, cm
 	return nil
 }
 
-func (p *Processor) send(ctx context.Context, chatId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl) error {
+func (p *Processor) send(ctx context.Context, chatId, topicId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl) error {
 	defer timeTrack(ctx, time.Now(), string(cmd))
 
 	content, err := p.contentManager.GetContent(ctx, cmd, cmdUrl)
@@ -232,7 +234,7 @@ func (p *Processor) send(ctx context.Context, chatId int, cmd commands.Cmd, cmdU
 	attempt := 0
 	for {
 		attempt++
-		err = p.sendContentAsMessage(chatId, content)
+		err = p.sendContentAsMessage(chatId, topicId, content)
 		if err == nil || attempt > 3 {
 			break
 		}
@@ -246,7 +248,7 @@ func (p *Processor) send(ctx context.Context, chatId int, cmd commands.Cmd, cmdU
 	return nil
 }
 
-func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) error {
+func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.TweetThread) error {
 	for i, tw := range tweet.Tweets {
 
 		message := html.EscapeString(generateText(tw))
@@ -293,7 +295,7 @@ func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) 
 
 				allMedia := append(tweet.Tweets[i].Media.Videos, tweet.Tweets[i].Media.Photos...)
 
-				err = p.tg.SendMedia(chatId, m, mediasForEncoding, allMedia)
+				err = p.tg.SendMedia(chatId, topicId, m, mediasForEncoding, allMedia)
 				if err != nil {
 					return errors.Wrap(err, "SendMedia")
 				}
@@ -317,7 +319,7 @@ func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) 
 				}
 
 				//err = p.tg.SendVideo(chatId, m, video(tw))
-				err = p.tg.SendMedia(chatId, m, mediasForEncoding, tweet.Tweets[i].Media.Videos)
+				err = p.tg.SendMedia(chatId, topicId, m, mediasForEncoding, tweet.Tweets[i].Media.Videos)
 				if err != nil {
 					return errors.Wrap(err, "SendVideo error")
 				}
@@ -326,7 +328,7 @@ func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) 
 			}
 
 			if len(tweet.Tweets[i].Media.Photos) == 1 {
-				err = p.tg.SendPhoto(chatId, m, photos(tw)[0].Url)
+				err = p.tg.SendPhoto(chatId, topicId, m, photos(tw)[0].Url)
 				if err != nil {
 					return errors.Wrap(err, "SendPhoto")
 				}
@@ -342,7 +344,7 @@ func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) 
 					},
 				}
 
-				err = p.tg.SendPhotos(chatId, m, mediaForEncoding)
+				err = p.tg.SendPhotos(chatId, topicId, m, mediaForEncoding)
 				if err != nil {
 					return errors.Wrap(err, "SendPhotos")
 				}
@@ -350,7 +352,7 @@ func (p *Processor) sendContentAsMessage(chatId int, tweet tgTypes.TweetThread) 
 				continue
 			}
 
-			if err := p.tg.SendMessage(chatId, m); err != nil {
+			if err := p.tg.SendMessage(chatId, topicId, m); err != nil {
 				return errors.Wrap(err, "SendMessage")
 			}
 			continue
@@ -383,9 +385,9 @@ func chunkString(s string, chunkSize int) ([]string, error) {
 	return chunks, nil
 }
 
-func (p *Processor) sendRandom(chatId int, username string) error {
+func (p *Processor) sendRandom(chatId, topicId int, username string) error {
 	n := rand.Intn(100)
-	if err := p.tg.SendMessage(chatId, fmt.Sprintf("random %d", n)); err != nil {
+	if err := p.tg.SendMessage(chatId, topicId, fmt.Sprintf("random %d", n)); err != nil {
 		return err
 	}
 
@@ -418,7 +420,7 @@ func (p *Processor) chatInfo(ctx context.Context, text string, sendTo int, reque
 		return errors.Wrap(err, "failed to marshal chat info")
 	}
 
-	_ = p.tg.SendMessage(sendTo, fmt.Sprintf("chat info: \n <pre>%s</pre>", string(chatJson)))
+	_ = p.tg.SendMessage(sendTo, 0, fmt.Sprintf("chat info: \n <pre>%s</pre>", string(chatJson)))
 
 	admins, err := p.tg.GetChatAdmins(ctx, chatId)
 	if err != nil {
@@ -430,7 +432,7 @@ func (p *Processor) chatInfo(ctx context.Context, text string, sendTo int, reque
 		return errors.Wrap(err, "failed to marshal chat admins")
 	}
 
-	_ = p.tg.SendMessage(sendTo, fmt.Sprintf("chat admins: \n <pre>%s</pre>", string(adminsJson)))
+	_ = p.tg.SendMessage(sendTo, 0, fmt.Sprintf("chat admins: \n <pre>%s</pre>", string(adminsJson)))
 	return nil
 }
 
@@ -456,7 +458,7 @@ func (p *Processor) leaveChat(ctx context.Context, userId int, text string) erro
 		return errors.Wrap(err, "failed to leave chat")
 	}
 
-	_ = p.tg.SendMessage(userId, fmt.Sprintf("bot left chat %d", chatId))
+	_ = p.tg.SendMessage(userId, 0, fmt.Sprintf("bot left chat %d", chatId))
 
 	return nil
 }
@@ -521,7 +523,7 @@ Daily: %d
 		message += fmt.Sprintf("\n%s: %d", k, v)
 	}
 
-	if err := p.tg.SendMessage(id, message); err != nil {
+	if err := p.tg.SendMessage(id, 0, message); err != nil {
 		return err
 	}
 
@@ -581,10 +583,10 @@ func video(tweet tgTypes.TweetContent) tgTypes.MediaObject {
 	return tgTypes.MediaObject{}
 }
 
-func (p *Processor) sendStart(chatId int, username string) error {
-	return p.tg.SendMessage(chatId, msgHello)
+func (p *Processor) sendStart(chatId, topicId int, username string) error {
+	return p.tg.SendMessage(chatId, topicId, msgHello)
 }
 
-func (p *Processor) sendHelp(chatId int, username string) error {
-	return p.tg.SendMessage(chatId, msgHelp)
+func (p *Processor) sendHelp(chatId, topicId int, username string) error {
+	return p.tg.SendMessage(chatId, topicId, msgHelp)
 }

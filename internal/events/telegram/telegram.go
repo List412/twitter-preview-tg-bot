@@ -2,9 +2,11 @@ package telegram
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"math"
 	"sync"
+
+	"github.com/pkg/errors"
+
 	"tweets-tg-bot/internal/clients/telegram"
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events"
@@ -37,6 +39,7 @@ var ErrUnknownMeta = errors.New("unknown meta")
 
 type Meta struct {
 	ChatId   int
+	TopicId  int
 	Username string
 	UserId   int
 	ChatName string
@@ -130,7 +133,7 @@ func (p *Processor) processMessage(ctx context.Context, e commands.Event) error 
 
 	p.usersChan <- meta.Username
 
-	if err := p.doCmd(ctx, e.Text, meta.ChatId, meta.ChatName, meta.Username, meta.UserId); err != nil {
+	if err := p.doCmd(ctx, e.Text, meta.ChatId, meta.TopicId, meta.ChatName, meta.Username, meta.UserId); err != nil {
 		return err
 	}
 
@@ -153,9 +156,15 @@ func event(u telegram.Update) commands.Event {
 		Text: fetchText(u),
 	}
 
+	topicId := 0
+	if u.Message.IsTopicMessage {
+		topicId = u.Message.MessageThreadId
+	}
+
 	if res.Type == commands.Message {
 		res.Meta = Meta{
 			ChatId:   u.Message.Chat.ID,
+			TopicId:  topicId,
 			Username: u.Message.From.Username,
 			UserId:   u.Message.From.Id,
 			ChatName: u.Message.Chat.Title,

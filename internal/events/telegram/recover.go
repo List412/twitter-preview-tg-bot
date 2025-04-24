@@ -11,5 +11,5 @@ func (p *Processor) recoverPanic(text string, chatId int, username string) {
 func (p *Processor) sendErrorToAdmin(text string, chatId int, username string, err interface{}) {
 	adminMessage := fmt.Sprintf("error occurred with message: %s \nfrom user: %s in chat: %d\n error: %v", text, username, chatId, err)
 
-	_ = p.tg.SendMessage(p.users.GetAdminId(), adminMessage)
+	_ = p.tg.SendMessage(p.users.GetAdminId(), 0, adminMessage)
 }

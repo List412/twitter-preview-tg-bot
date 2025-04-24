@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -15,6 +13,10 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
+	"golang.org/x/time/rate"
+
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
@@ -64,12 +66,16 @@ func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 	return response.Result, nil
 }
 
-func (c *Client) SendMessage(chatId int, text string) error {
+func (c *Client) SendMessage(chatId, topicId int, text string) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("text", text)
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
+
+	if topicId > 0 {
+		q.Add("message_thread_id", strconv.Itoa(topicId))
+	}
 
 	_, err := c.get(sendMessage, q)
 	if err != nil {
@@ -80,10 +86,14 @@ func (c *Client) SendMessage(chatId int, text string) error {
 
 // SendPhotos
 // send photos
-func (c *Client) SendPhotos(chatId int, text string, mediaUrls []MediaForEncoding) error {
+func (c *Client) SendPhotos(chatId, topicId int, text string, mediaUrls []MediaForEncoding) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
+
+	if topicId > 0 {
+		q.Add("message_thread_id", strconv.Itoa(topicId))
+	}
 
 	encodedMedia, err := encodedMediaObjects(mediaUrls, text)
 	if err != nil {
@@ -109,10 +119,14 @@ func (c *Client) SendPhotos(chatId int, text string, mediaUrls []MediaForEncodin
 
 // SendMedia
 // send photo/video
-func (c *Client) SendMedia(chatId int, text string, mediaUrls []MediaForEncoding, allMedia []tgTypes.MediaObject) error {
+func (c *Client) SendMedia(chatId, topicId int, text string, mediaUrls []MediaForEncoding, allMedia []tgTypes.MediaObject) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
+
+	if topicId > 0 {
+		q.Add("message_thread_id", strconv.Itoa(topicId))
+	}
 
 	encodedMedia, err := encodedMediaObjects(mediaUrls, text)
 	if err != nil {
@@ -136,13 +150,17 @@ func (c *Client) SendMedia(chatId int, text string, mediaUrls []MediaForEncoding
 	return nil
 }
 
-func (c *Client) SendPhoto(chatId int, text string, photo string) error {
+func (c *Client) SendPhoto(chatId, topicId int, text string, photo string) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("photo", photo)
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
+
+	if topicId > 0 {
+		q.Add("message_thread_id", strconv.Itoa(topicId))
+	}
 
 	resp, err := c.get(sendPhoto, q)
 	if err != nil {
@@ -154,7 +172,7 @@ func (c *Client) SendPhoto(chatId int, text string, photo string) error {
 	return nil
 }
 
-func (c *Client) SendVideo(chatId int, text string, video tgTypes.MediaObject) error {
+func (c *Client) SendVideo(chatId, topicId int, text string, video tgTypes.MediaObject) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	videoPath := video.Url
@@ -162,6 +180,10 @@ func (c *Client) SendVideo(chatId int, text string, video tgTypes.MediaObject) e
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
+
+	if topicId > 0 {
+		q.Add("message_thread_id", strconv.Itoa(topicId))
+	}
 
 	_, err := c.get(sendVideo, q)
 	if err != nil {
