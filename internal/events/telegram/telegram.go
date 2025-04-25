@@ -156,12 +156,12 @@ func event(u telegram.Update) commands.Event {
 		Text: fetchText(u),
 	}
 
-	topicId := 0
-	if u.Message.IsTopicMessage {
-		topicId = u.Message.MessageThreadId
-	}
-
 	if res.Type == commands.Message {
+		topicId := 0
+		if u.Message.IsTopicMessage {
+			topicId = u.Message.MessageThreadId
+		}
+
 		res.Meta = Meta{
 			ChatId:   u.Message.Chat.ID,
 			TopicId:  topicId,
