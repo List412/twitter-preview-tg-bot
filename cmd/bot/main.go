@@ -3,21 +3,25 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"syscall"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
 	"tweets-tg-bot/internal/clients"
 	"tweets-tg-bot/internal/clients/instagram"
+	"tweets-tg-bot/internal/clients/instagram/graphql"
 	"tweets-tg-bot/internal/clients/instagram/instagramscrapper"
+	"tweets-tg-bot/internal/clients/instagram/instagramscrapper2"
 	"tweets-tg-bot/internal/clients/instagram/profileandmedia"
 	"tweets-tg-bot/internal/clients/instagram/saveinsta1"
 	"tweets-tg-bot/internal/clients/instagram/socialapi1instagram"
@@ -144,7 +148,15 @@ func main() {
 	profileandmediaClient := profileandmedia.NewClient(rapidApiClient, cfg.ProfileAndMedia.Host)
 	profileandmediaService := profileandmedia.NewService(profileandmediaClient)
 
+	instascrapper2Client := instagramscrapper2.NewClient(rapidApiClient, cfg.InstagramScrapper2.Host)
+	instascrapper2Service := instagramscrapper2.NewService(instascrapper2Client)
+
+	grapthqlClient := graphql.NewClient("")
+	grapthqlService := graphql.NewService(grapthqlClient)
+
 	instaService := instagram.NewService()
+	instaService.RegisterApi(grapthqlService)
+	instaService.RegisterApi(instascrapper2Service)
 	instaService.RegisterApi(instagramscrapperService)
 	instaService.RegisterApi(instagramSocialApiService)
 	instaService.RegisterApi(profileandmediaService)

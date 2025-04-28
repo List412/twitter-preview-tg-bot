@@ -3,10 +3,13 @@ package instagram
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"log"
+	"reflect"
 	"runtime/debug"
 	"time"
+
+	"github.com/pkg/errors"
+
 	"tweets-tg-bot/internal/commands"
 	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
@@ -33,6 +36,8 @@ func (s *Service) GetContent(ctx context.Context, cmdUrl commands.ParsedCmdUrl) 
 	for retries > 0 {
 		retries--
 		for _, api := range s.apis {
+			t := reflect.TypeOf(api)
+			log.Println(fmt.Sprintf("call service %s", t.String()))
 			result, err := s.getPostOrError(ctx, api, cmdUrl)
 			if err != nil {
 				log.Println("GetPost", err)

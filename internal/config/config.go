@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
 )
@@ -39,6 +40,7 @@ type Config struct {
 	InstagramScrapper     InstagramScrapper
 	InstagramBulkScrapper InstagramBulkScrapper
 	SaveInsta1            SaveInsta1
+	InstagramScrapper2    InstagramScrapper2
 	ProfileAndMedia       ProfileAndMedia
 	RapidApi              RapidApi
 
@@ -97,6 +99,10 @@ type InstagramBulkScrapper struct {
 
 type SaveInsta1 struct {
 	Host string `env:"SAVEINSTA1_HOST"`
+}
+
+type InstagramScrapper2 struct {
+	Host string `env:"INSTAGRAMSCRAPPER2_HOST"`
 }
 
 type RapidApi struct {
