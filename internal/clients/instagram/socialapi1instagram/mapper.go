@@ -2,8 +2,8 @@ package socialapi1instagram
 
 import (
 	"fmt"
-	"github.com/list412/tweets-tg-bot/internal/downloader"
-	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/twitter-preview-tg-bot/internal/downloader"
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
 	"strconv"
 	"time"

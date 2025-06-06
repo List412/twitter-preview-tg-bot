@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type Downloader struct {

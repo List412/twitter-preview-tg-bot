@@ -47,6 +47,10 @@ type Config struct {
 	BotHandler string `env:"BOT_HANDLER"`
 }
 
+type Vosk struct {
+	Path string `env:"VOSK_PATH"`
+}
+
 type Prometheus struct {
 	Port int `env:"PROM_PORT"`
 }

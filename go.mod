@@ -1,4 +1,4 @@
-module github.com/list412/tweets-tg-bot
+module github.com/list412/twitter-preview-tg-bot
 
 go 1.23
 

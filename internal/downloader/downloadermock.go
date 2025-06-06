@@ -1,6 +1,6 @@
 package downloader
 
-import "github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+import "github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 
 type Mock struct {
 }

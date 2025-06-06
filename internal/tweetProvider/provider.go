@@ -3,7 +3,7 @@ package tweetProvider
 import (
 	"context"
 	"fmt"
-	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
 	"log"
 	"runtime/debug"

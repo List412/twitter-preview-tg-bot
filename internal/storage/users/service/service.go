@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"github.com/list412/tweets-tg-bot/internal/commands"
-	"github.com/list412/tweets-tg-bot/internal/config"
+	"github.com/list412/twitter-preview-tg-bot/internal/commands"
+	"github.com/list412/twitter-preview-tg-bot/internal/config"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"

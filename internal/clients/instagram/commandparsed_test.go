@@ -3,7 +3,7 @@ package instagram
 import (
 	"testing"
 
-	"github.com/list412/tweets-tg-bot/internal/commands"
+	"github.com/list412/twitter-preview-tg-bot/internal/commands"
 )
 
 func TestCommandParser_Parse(t *testing.T) {

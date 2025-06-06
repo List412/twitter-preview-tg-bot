@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
-	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func NewClient(host string, token string) *Client {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func Map(post *ParsedPost) (tgTypes.TweetThread, error) {
