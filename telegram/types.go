@@ -1,7 +1,5 @@
 package telegram
 
-import "github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
-
 type UpdateResponse struct {
 	Ok     bool     `json:"ok"`
 	Result []Update `json:"result"`
@@ -51,15 +49,22 @@ type Chat struct {
 	Title string `json:"title"`
 }
 
-type MediaObject struct {
+type EncodedMediaObject struct {
 	Type      string `json:"type"`
 	Media     string `json:"media"`
 	Caption   string `json:"caption,omitempty"`
 	ParseMode string `json:"parse_mode,omitempty"`
 }
 
+type MediaObject struct {
+	Name       string
+	Url        string
+	Data       []byte
+	NeedUpload bool
+}
+
 type MediaForEncoding struct {
-	Media           []tgTypes.MediaObject
+	Media           []MediaObject
 	MediaType       string
 	ForceNeedUpload bool
 }

@@ -26,7 +26,6 @@ import (
 	"github.com/list412/twitter-preview-tg-bot/internal/clients/instagram/saveinsta1"
 	"github.com/list412/twitter-preview-tg-bot/internal/clients/instagram/socialapi1instagram"
 	"github.com/list412/twitter-preview-tg-bot/internal/clients/rapidApi"
-	tgClient "github.com/list412/twitter-preview-tg-bot/internal/clients/telegram"
 	tiktok2 "github.com/list412/twitter-preview-tg-bot/internal/clients/tiktok"
 	"github.com/list412/twitter-preview-tg-bot/internal/clients/tiktok/tiktok89"
 	"github.com/list412/twitter-preview-tg-bot/internal/clients/tiktok/tiktokscraper7"
@@ -44,6 +43,7 @@ import (
 	repository2 "github.com/list412/twitter-preview-tg-bot/internal/storage/share/repository"
 	"github.com/list412/twitter-preview-tg-bot/internal/storage/users/repository"
 	"github.com/list412/twitter-preview-tg-bot/internal/storage/users/service"
+	tgClient "github.com/list412/twitter-preview-tg-bot/telegram"
 )
 
 func main() {

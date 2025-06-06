@@ -7,14 +7,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/list412/twitter-preview-tg-bot/internal/clients/telegram"
 	"github.com/list412/twitter-preview-tg-bot/internal/commands"
 	"github.com/list412/twitter-preview-tg-bot/internal/events"
 	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
+	telegram2 "github.com/list412/twitter-preview-tg-bot/telegram"
 )
 
 func New(
-	tgClient *telegram.Client,
+	tgClient *telegram2.Client,
 	contentManager ContentManager,
 	cmdParsers commands.Parsers,
 	users events.UsersServiceInterface,
@@ -50,7 +50,7 @@ type ContentManager interface {
 }
 
 type Processor struct { //todo rename lol
-	tg              *telegram.Client
+	tg              *telegram2.Client
 	offset          int
 	contentManager  ContentManager
 	cmdParser       commands.Parsers
@@ -148,7 +148,7 @@ func meta(e commands.Event) (Meta, error) {
 	return res, nil
 }
 
-func event(u telegram.Update) commands.Event {
+func event(u telegram2.Update) commands.Event {
 	messageType := fetchType(u)
 
 	res := commands.Event{
@@ -175,14 +175,14 @@ func event(u telegram.Update) commands.Event {
 	return res
 }
 
-func fetchText(u telegram.Update) string {
+func fetchText(u telegram2.Update) string {
 	if u.Message == nil {
 		return ""
 	}
 	return u.Message.Text
 }
 
-func fetchType(u telegram.Update) commands.Type {
+func fetchType(u telegram2.Update) commands.Type {
 	if u.Message == nil {
 		return commands.Unknown
 	}

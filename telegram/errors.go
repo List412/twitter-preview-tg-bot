@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 )
 

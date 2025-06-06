@@ -16,8 +16,6 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
-
-	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func NewClient(host string, token string) *Client {
@@ -176,7 +174,7 @@ func (c *Client) SendPhotos(chatId, topicId int, text string, mediaUrls []MediaF
 
 // SendMedia
 // send photo/video
-func (c *Client) SendMedia(chatId, topicId int, text string, mediaUrls []MediaForEncoding, allMedia []tgTypes.MediaObject) error {
+func (c *Client) SendMedia(chatId, topicId int, text string, mediaUrls []MediaForEncoding, allMedia []MediaObject) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("disable_notification", "true")
@@ -229,7 +227,7 @@ func (c *Client) SendPhoto(chatId, topicId int, text string, photo string) error
 	return nil
 }
 
-func (c *Client) SendVideo(chatId, topicId int, text string, video tgTypes.MediaObject) error {
+func (c *Client) SendVideo(chatId, topicId int, text string, video MediaObject) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	videoPath := video.Url
@@ -338,7 +336,7 @@ func (c *Client) do(req *http.Request) ([]byte, error) {
 	return body, nil
 }
 
-func (c *Client) postMultipart(method string, query url.Values, files []tgTypes.MediaObject) ([]byte, error) {
+func (c *Client) postMultipart(method string, query url.Values, files []MediaObject) ([]byte, error) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
@@ -399,7 +397,7 @@ const MediaTypePhoto mediaType = "photo"
 const MediaTypeVideo mediaType = "video"
 
 func encodedMediaObjects(mediaForEncoding []MediaForEncoding, text string) (string, error) {
-	var mediaObjects []MediaObject
+	var mediaObjects []EncodedMediaObject
 
 	for j, mediaForEncoding := range mediaForEncoding {
 		if len(mediaForEncoding.Media) == 0 {
@@ -414,7 +412,7 @@ func encodedMediaObjects(mediaForEncoding []MediaForEncoding, text string) (stri
 			if v.NeedUpload {
 				mediaPath = fmt.Sprintf("attach://%s", v.Name)
 			}
-			media := MediaObject{
+			media := EncodedMediaObject{
 				Type:  currentMediaType,
 				Media: mediaPath,
 			}
@@ -435,7 +433,7 @@ func encodedMediaObjects(mediaForEncoding []MediaForEncoding, text string) (stri
 	return string(encoded), nil
 }
 
-func encodedMediaObject(mediaUrl tgTypes.MediaObject, text string, mediaType mediaType) (string, error) {
+func encodedMediaObject(mediaUrl MediaObject, text string, mediaType mediaType) (string, error) {
 	mediaPath := mediaUrl.Url
 	if mediaUrl.NeedUpload {
 		mediaPath = fmt.Sprintf("attach://%s", mediaUrl.Name)

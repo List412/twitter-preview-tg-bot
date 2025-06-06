@@ -13,10 +13,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/list412/twitter-preview-tg-bot/internal/clients/telegram"
 	"github.com/list412/twitter-preview-tg-bot/internal/commands"
 	"github.com/list412/twitter-preview-tg-bot/internal/downloader"
 	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
+	telegram2 "github.com/list412/twitter-preview-tg-bot/telegram"
 )
 
 var AllCommands = []commands.Cmd{
@@ -206,10 +206,10 @@ func timeTrack(ctx context.Context, start time.Time, name string) {
 func (p *Processor) sendContentOrHandleError(ctx context.Context, chatId, topicId int, cmd commands.Cmd, cmdUrl commands.ParsedCmdUrl, username string) error {
 	err := p.send(ctx, chatId, topicId, cmd, cmdUrl)
 	var err2 error
-	if errors.Is(err, telegram.ErrNoEnoughRightToSendPhoto) {
+	if errors.Is(err, telegram2.ErrNoEnoughRightToSendPhoto) {
 		err2 = p.tg.SendMessage(chatId, topicId, "<i>Sorry, the bot doesn't have enough right to send photo contained in the provided link. Please allow sending photos in the chat settings.</i>")
 	}
-	if errors.Is(err, telegram.ErrNoEnoughRightToSendVideo) {
+	if errors.Is(err, telegram2.ErrNoEnoughRightToSendVideo) {
 		err2 = p.tg.SendMessage(chatId, topicId, "<i>Sorry, the bot doesn't have enough right to send video contained in the provided link. Please allow sending video in the chat settings.</i>")
 	}
 	if err2 != nil {
@@ -266,7 +266,7 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 			if len(tweet.Tweets[i].Media.Videos) >= 2 || len(tweet.Tweets[i].Media.Photos) > 0 ||
 				(len(tweet.Tweets[i].Media.Videos) == 1 && len(tweet.Tweets[i].Media.Photos) >= 1) {
 
-				var mediasForEncoding []telegram.MediaForEncoding
+				var mediasForEncoding []telegram2.MediaForEncoding
 				if len(tweet.Tweets[i].Media.Photos) > 0 {
 					downloadedPhotos, err := downloader.Download(tweet.Tweets[i].Media.Photos)
 					if err != nil {
@@ -274,9 +274,9 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 					}
 					tweet.Tweets[i].Media.Photos = downloadedPhotos
 
-					mediasForEncoding = append(mediasForEncoding, telegram.MediaForEncoding{
+					mediasForEncoding = append(mediasForEncoding, telegram2.MediaForEncoding{
 						Media:     tweet.Tweets[i].Media.Photos,
-						MediaType: telegram.MediaTypePhoto,
+						MediaType: telegram2.MediaTypePhoto,
 					})
 				}
 
@@ -287,9 +287,9 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 					}
 					tweet.Tweets[i].Media.Videos = downloadedVideos
 
-					mediasForEncoding = append(mediasForEncoding, telegram.MediaForEncoding{
+					mediasForEncoding = append(mediasForEncoding, telegram2.MediaForEncoding{
 						Media:     tweet.Tweets[i].Media.Videos,
-						MediaType: telegram.MediaTypeVideo,
+						MediaType: telegram2.MediaTypeVideo,
 					})
 				}
 
@@ -311,10 +311,10 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 				}
 				tweet.Tweets[i].Media.Videos = downloadedVideos
 
-				mediasForEncoding := []telegram.MediaForEncoding{
+				mediasForEncoding := []telegram2.MediaForEncoding{
 					{
 						Media:     tweet.Tweets[i].Media.Videos,
-						MediaType: telegram.MediaTypeVideo,
+						MediaType: telegram2.MediaTypeVideo,
 					},
 				}
 
@@ -337,10 +337,10 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 			}
 
 			if len(tweet.Tweets[i].Media.Photos) >= 2 {
-				mediaForEncoding := []telegram.MediaForEncoding{
+				mediaForEncoding := []telegram2.MediaForEncoding{
 					{
 						Media:     photos(tw),
-						MediaType: telegram.MediaTypePhoto,
+						MediaType: telegram2.MediaTypePhoto,
 					},
 				}
 
