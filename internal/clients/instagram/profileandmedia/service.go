@@ -2,9 +2,9 @@ package profileandmedia
 
 import (
 	"context"
+	"github.com/list412/tweets-tg-bot/internal/commands"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
-	"tweets-tg-bot/internal/commands"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type Service struct {

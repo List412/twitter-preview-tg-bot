@@ -2,11 +2,11 @@ package twttrapi
 
 import (
 	"fmt"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
 	"strings"
 	"time"
-	"tweets-tg-bot/internal/events/telegram"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type Downloader interface {

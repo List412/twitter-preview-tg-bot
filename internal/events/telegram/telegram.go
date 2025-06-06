@@ -7,10 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"tweets-tg-bot/internal/clients/telegram"
-	"tweets-tg-bot/internal/commands"
-	"tweets-tg-bot/internal/events"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/tweets-tg-bot/internal/clients/telegram"
+	"github.com/list412/tweets-tg-bot/internal/commands"
+	"github.com/list412/tweets-tg-bot/internal/events"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func New(

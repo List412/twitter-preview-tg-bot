@@ -3,9 +3,11 @@ package clients
 import (
 	"context"
 	"fmt"
+
 	"github.com/pkg/errors"
-	"tweets-tg-bot/internal/commands"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
+
+	"github.com/list412/tweets-tg-bot/internal/commands"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type ContentProvider interface {

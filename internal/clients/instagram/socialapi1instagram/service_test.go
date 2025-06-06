@@ -3,14 +3,17 @@ package socialapi1instagram
 import (
 	"context"
 	"encoding/json"
-	"github.com/go-test/deep"
 	"os"
 	"path"
 	"strings"
 	"testing"
-	"tweets-tg-bot/internal/clients/rapidApi"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
-	"tweets-tg-bot/internal/projectpath"
+
+	"github.com/go-test/deep"
+
+	"github.com/list412/tweets-tg-bot/internal/clients/rapidApi"
+	"github.com/list412/tweets-tg-bot/internal/commands"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/tweets-tg-bot/internal/projectpath"
 )
 
 func TestService_GetPost(t *testing.T) {
@@ -19,7 +22,7 @@ func TestService_GetPost(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		id  string
+		id  commands.ParsedCmdUrl
 	}
 	type testCase struct {
 		name    string
@@ -65,7 +68,7 @@ func TestService_GetPost(t *testing.T) {
 				},
 				args: args{
 					ctx: context.WithValue(context.Background(), rapidApi.CtxUrlKey{}, dirEntry.Name()),
-					id:  url,
+					id:  commands.ParsedCmdUrl{OriginalUrl: url, Key: "", StrippedUrl: url},
 				},
 				want:    result,
 				wantErr: false,

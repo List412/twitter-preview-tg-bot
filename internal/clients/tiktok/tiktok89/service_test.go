@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/go-test/deep"
+	"github.com/list412/tweets-tg-bot/internal/clients/rapidApi"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/tweets-tg-bot/internal/projectpath"
 	"os"
 	"path"
 	"strings"
 	"testing"
-	"tweets-tg-bot/internal/clients/rapidApi"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
-	"tweets-tg-bot/internal/projectpath"
 )
 
 func TestService_GetVideo(t *testing.T) {

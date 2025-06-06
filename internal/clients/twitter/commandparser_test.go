@@ -1,8 +1,8 @@
 package twitter
 
 import (
+	"github.com/list412/tweets-tg-bot/internal/commands"
 	"testing"
-	"tweets-tg-bot/internal/commands"
 )
 
 func TestCommandParser_Parse(t *testing.T) {

@@ -2,8 +2,8 @@ package twttrapi
 
 import (
 	"context"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func NewService(client ClientI, mapper MapperI) *Service {

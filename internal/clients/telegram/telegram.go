@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func NewClient(host string, token string) *Client {
@@ -48,6 +48,44 @@ const getChat = "getChat"
 const getChatAdmins = "getChatAdministrators"
 const leaveChat = "leaveChat"
 
+const getFile = "getFile"
+
+func (c *Client) Download(filepath string) ([]byte, error) {
+	// https://api.telegram.org/file/bot<token>/<file_path>
+	u := url.URL{
+		Scheme: "https",
+		Host:   c.host,
+		Path:   path.Join("file", c.basePath, filepath),
+	}
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while downloading file")
+	}
+
+	return c.do(req)
+}
+
+func (c *Client) GetFile(filepath string) (*GetFileResult, error) {
+	q := url.Values{}
+	q.Add("file_id", filepath)
+	data, err := c.get(getFile, q)
+	if err != nil {
+		return nil, err
+	}
+	var response GetFileResponse
+	err = json.Unmarshal(data, &response)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while parsing response body")
+	}
+
+	if !response.Ok {
+		return nil, errors.Errorf("error while parsing response body")
+	}
+
+	return &response.Result, nil
+}
+
 func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 	q := url.Values{}
 	q.Add("offset", strconv.Itoa(offset))
@@ -72,6 +110,25 @@ func (c *Client) SendMessage(chatId, topicId int, text string) error {
 	q.Add("text", text)
 	q.Add("disable_notification", "true")
 	q.Add("parse_mode", "HTML")
+
+	if topicId > 0 {
+		q.Add("message_thread_id", strconv.Itoa(topicId))
+	}
+
+	_, err := c.get(sendMessage, q)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) ReplyToMessage(chatId, topicId, replyToMessageId int, text string) error {
+	q := url.Values{}
+	q.Add("chat_id", strconv.Itoa(chatId))
+	q.Add("text", text)
+	q.Add("disable_notification", "true")
+	q.Add("parse_mode", "HTML")
+	q.Add("reply_to_message_id", strconv.Itoa(replyToMessageId))
 
 	if topicId > 0 {
 		q.Add("message_thread_id", strconv.Itoa(topicId))
@@ -325,7 +382,9 @@ func (c *Client) get(method string, query url.Values) ([]byte, error) {
 		return nil, errors.Wrapf(err, "error while creating request: %s", method)
 	}
 
-	req.URL.RawQuery = query.Encode()
+	if query != nil {
+		req.URL.RawQuery = query.Encode()
+	}
 
 	return c.do(req)
 }

@@ -141,14 +141,9 @@ type Video struct {
 	BitRateAudio  []interface{} `json:"bit_rate_audio"`
 	CdnUrlExpired int           `json:"cdn_url_expired"`
 
-	DownloadAddr struct {
-		DataSize  int         `json:"data_size"`
-		Height    int         `json:"height"`
-		Uri       string      `json:"uri"`
-		UrlList   []string    `json:"url_list"`
-		UrlPrefix interface{} `json:"url_prefix"`
-		Width     int         `json:"width"`
-	} `json:"download_addr"`
+	DownloadAddr *Download `json:"download_addr"`
+
+	DownloadNoWatermark *Download `json:"download_no_watermark_addr"`
 
 	Duration int `json:"duration"`
 
@@ -161,19 +156,21 @@ type Video struct {
 	Meta                      string `json:"meta"`
 	MiscDownloadAddrs         string `json:"misc_download_addrs"`
 
-	PlayAddr struct {
-		DataSize  int         `json:"data_size"`
-		FileCs    string      `json:"file_cs"`
-		FileHash  string      `json:"file_hash"`
-		Height    int         `json:"height"`
-		Uri       string      `json:"uri"`
-		UrlKey    string      `json:"url_key"`
-		UrlList   []string    `json:"url_list"`
-		UrlPrefix interface{} `json:"url_prefix"`
-		Width     int         `json:"width"`
-	} `json:"play_addr"`
+	PlayAddr      *Download   `json:"play_addr"`
 	Ratio         string      `json:"ratio"`
 	SourceHDRType int         `json:"source_HDR_type"`
 	Tags          interface{} `json:"tags"`
 	Width         int         `json:"width"`
+}
+
+type Download struct {
+	DataSize  int         `json:"data_size"`
+	FileCs    string      `json:"file_cs"`
+	FileHash  string      `json:"file_hash"`
+	Height    int         `json:"height"`
+	Uri       string      `json:"uri"`
+	UrlKey    string      `json:"url_key"`
+	UrlList   []string    `json:"url_list"`
+	UrlPrefix interface{} `json:"url_prefix"`
+	Width     int         `json:"width"`
 }

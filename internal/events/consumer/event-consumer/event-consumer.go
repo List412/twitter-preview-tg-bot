@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/list412/tweets-tg-bot/internal/commands"
+	"github.com/list412/tweets-tg-bot/internal/events"
+	"github.com/list412/tweets-tg-bot/internal/logger"
 	"log/slog"
 	"sync"
 	"time"
-	"tweets-tg-bot/internal/commands"
-	"tweets-tg-bot/internal/events"
-	"tweets-tg-bot/internal/logger"
 )
 
 func NewConsumer(fetcher events.Fetcher, processor events.Processor, batchSize int) consumer {

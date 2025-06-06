@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"tweets-tg-bot/internal/commands"
+	"github.com/list412/tweets-tg-bot/internal/commands"
 )
 
 type Fetcher interface {

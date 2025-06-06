@@ -1,6 +1,6 @@
 package telegram
 
-import "tweets-tg-bot/internal/events/telegram/tgTypes"
+import "github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 
 type UpdateResponse struct {
 	Ok     bool     `json:"ok"`
@@ -13,11 +13,31 @@ type Update struct {
 }
 
 type IncomingMessage struct {
-	Text            string `json:"text"`
-	From            User   `json:"from"`
-	Chat            Chat   `json:"chat"`
-	MessageThreadId int    `json:"message_thread_id"`
-	IsTopicMessage  bool   `json:"is_topic_message"`
+	Id              int        `json:"message_id"`
+	Text            string     `json:"text"`
+	From            User       `json:"from"`
+	Chat            Chat       `json:"chat"`
+	MessageThreadId int        `json:"message_thread_id"`
+	IsTopicMessage  bool       `json:"is_topic_message"`
+	Voice           *Voice     `json:"voice"`
+	VideoNote       *VideoNote `json:"video_note"`
+}
+
+type VideoNote struct {
+	Duration int `json:"duration"`
+	Length   int `json:"length"`
+
+	FileId       string `json:"file_id"`
+	FileUniqueId string `json:"file_unique_id"`
+	FileSize     int    `json:"file_size"`
+}
+
+type Voice struct {
+	Duration     int    `json:"duration"`
+	MimeType     string `json:"mime_type"`
+	FileId       string `json:"file_id"`
+	FileUniqueId string `json:"file_unique_id"`
+	FileSize     int    `json:"file_size"`
 }
 
 type User struct {
@@ -108,4 +128,16 @@ type ChatAdmins struct {
 		Status      string `json:"status"`
 		IsAnonymous bool   `json:"is_anonymous"`
 	} `json:"result"`
+}
+
+type GetFileResponse struct {
+	Ok     bool          `json:"ok"`
+	Result GetFileResult `json:"result"`
+}
+
+type GetFileResult struct {
+	FileId       string `json:"file_id"`
+	FileUniqueId string `json:"file_unique_id"`
+	FileSize     int    `json:"file_size"`
+	FilePath     string `json:"file_path"`
 }

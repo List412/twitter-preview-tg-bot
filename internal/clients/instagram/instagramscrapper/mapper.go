@@ -2,10 +2,10 @@ package instagramscrapper
 
 import (
 	"fmt"
+	"github.com/list412/tweets-tg-bot/internal/downloader"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
 	"time"
-	"tweets-tg-bot/internal/downloader"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func Map(post *ParsedPost) (tgTypes.TweetThread, error) {

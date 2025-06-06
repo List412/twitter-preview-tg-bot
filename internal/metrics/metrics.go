@@ -2,8 +2,8 @@ package metrics
 
 import (
 	"context"
+	"github.com/list412/tweets-tg-bot/internal/commands"
 	"github.com/prometheus/client_golang/prometheus"
-	"tweets-tg-bot/internal/commands"
 )
 
 type Metrics struct {

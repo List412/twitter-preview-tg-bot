@@ -2,7 +2,8 @@ package instagram
 
 import (
 	"testing"
-	"tweets-tg-bot/internal/commands"
+
+	"github.com/list412/tweets-tg-bot/internal/commands"
 )
 
 func TestCommandParser_Parse(t *testing.T) {
@@ -56,6 +57,18 @@ func TestCommandParser_Parse(t *testing.T) {
 				OriginalUrl: "https://www.instagram.com/reel/DAlNNKvNCiP/?igsh=MTgyNXBxa29xdjU5ZA==",
 				Key:         "DAlNNKvNCiP",
 				StrippedUrl: "https://www.instagram.com/reel/DAlNNKvNCiP/",
+			},
+			wantErr: false,
+		},
+		{
+			name: "reel_2",
+			args: args{
+				text: "https://www.instagram.com/share/reel/BAY8zQd4B_",
+			},
+			want: commands.ParsedCmdUrl{
+				OriginalUrl: "https://www.instagram.com/share/reel/BAY8zQd4B_",
+				Key:         "BAY8zQd4B_",
+				StrippedUrl: "https://www.instagram.com/share/reel/BAY8zQd4B_",
 			},
 			wantErr: false,
 		},

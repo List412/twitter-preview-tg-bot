@@ -1,10 +1,12 @@
 package instagram
 
 import (
-	"github.com/pkg/errors"
 	"net/url"
 	"strings"
-	"tweets-tg-bot/internal/commands"
+
+	"github.com/pkg/errors"
+
+	"github.com/list412/tweets-tg-bot/internal/commands"
 )
 
 type CommandParser struct {
@@ -44,6 +46,18 @@ func (p CommandParser) Parse(text string) (commands.ParsedCmdUrl, error) {
 		return commands.ParsedCmdUrl{}, errors.New("media id is empty")
 	}
 	switch path[0] {
+	case "share":
+		{
+			if len(path) < 3 {
+				return commands.ParsedCmdUrl{}, errors.New("media code not found")
+			}
+			switch path[1] {
+			case "reel":
+				{
+					parsedUrl.Key = path[2]
+				}
+			}
+		}
 	case "reel":
 		fallthrough
 	case "p":

@@ -1,12 +1,14 @@
 package downloader
 
 import (
-	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"net/http"
 	"strconv"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
+
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type Downloader struct {

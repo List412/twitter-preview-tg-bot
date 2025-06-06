@@ -2,9 +2,11 @@ package tiktok89
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"time"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
+
+	"github.com/pkg/errors"
+
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func Map(parsedVideo *VideoParsed) (tgTypes.TweetThread, error) {
@@ -13,6 +15,13 @@ func Map(parsedVideo *VideoParsed) (tgTypes.TweetThread, error) {
 	stats := parsedVideo.Statistics
 	author := parsedVideo.Author
 	video := parsedVideo.Video
+	download := video.DownloadNoWatermark
+	if download == nil {
+		download = video.DownloadAddr
+	}
+	if download == nil {
+		download = video.PlayAddr
+	}
 
 	t := time.Unix(int64(parsedVideo.CreateTime), 0)
 	tweet.Time = t
@@ -28,13 +37,19 @@ func Map(parsedVideo *VideoParsed) (tgTypes.TweetThread, error) {
 	content.Text = parsedVideo.Desc
 	media := tgTypes.Media{}
 
-	videoUrl, err := videoVariants(video)
-	if err != nil {
-		return tweet, errors.Wrap(err, "error getting video url")
+	var err error
+	var videoUrl string
+	if len(download.UrlList) > 0 {
+		videoUrl = download.UrlList[1]
+	} else {
+		videoUrl, err = videoVariants(video)
+		if err != nil {
+			return tweet, errors.Wrap(err, "error getting video url")
+		}
 	}
 
 	media.Videos = append(media.Videos, tgTypes.MediaObject{
-		Name:       "def",
+		Name:       "video",
 		Url:        videoUrl,
 		NeedUpload: true,
 	})

@@ -2,9 +2,9 @@ package tiktokscraper7
 
 import (
 	"fmt"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
 	"time"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 func Map(parsedVideo *VideoParsed) (tgTypes.TweetThread, error) {

@@ -3,11 +3,11 @@ package tweetProvider
 import (
 	"context"
 	"fmt"
+	"github.com/list412/tweets-tg-bot/internal/events/telegram/tgTypes"
 	"github.com/pkg/errors"
 	"log"
 	"runtime/debug"
 	"sync"
-	"tweets-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type GetTweetApi interface {
