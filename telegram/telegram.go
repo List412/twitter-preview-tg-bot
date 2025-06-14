@@ -18,13 +18,14 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func NewClient(host string, token string) *Client {
+func NewClient(host, token, parseMode string) *Client {
 	return &Client{
 		host:       host,
 		basePath:   basePath(token),
 		client:     http.Client{},
 		limiter:    rate.NewLimiter(10, 1),
 		maxRetries: 4,
+		parseMode:  parseMode,
 	}
 }
 
@@ -34,6 +35,7 @@ type Client struct {
 	client     http.Client
 	limiter    *rate.Limiter
 	maxRetries int
+	parseMode  string
 }
 
 const getUpdates = "getUpdates"
@@ -107,7 +109,7 @@ func (c *Client) SendMessage(chatId, topicId int, text string) error {
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("text", text)
 	q.Add("disable_notification", "true")
-	q.Add("parse_mode", "HTML")
+	q.Add("parse_mode", c.parseMode)
 
 	if topicId > 0 {
 		q.Add("message_thread_id", strconv.Itoa(topicId))
@@ -125,7 +127,7 @@ func (c *Client) ReplyToMessage(chatId, topicId, replyToMessageId int, text stri
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("text", text)
 	q.Add("disable_notification", "true")
-	q.Add("parse_mode", "HTML")
+	q.Add("parse_mode", c.parseMode)
 	q.Add("reply_to_message_id", strconv.Itoa(replyToMessageId))
 
 	if topicId > 0 {
@@ -211,7 +213,7 @@ func (c *Client) SendPhoto(chatId, topicId int, text string, photo string) error
 	q.Add("photo", photo)
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
-	q.Add("parse_mode", "HTML")
+	q.Add("parse_mode", c.parseMode)
 
 	if topicId > 0 {
 		q.Add("message_thread_id", strconv.Itoa(topicId))
@@ -234,7 +236,7 @@ func (c *Client) SendVideo(chatId, topicId int, text string, video MediaObject) 
 	q.Add("video", videoPath)
 	q.Add("caption", text)
 	q.Add("disable_notification", "true")
-	q.Add("parse_mode", "HTML")
+	q.Add("parse_mode", c.parseMode)
 
 	if topicId > 0 {
 		q.Add("message_thread_id", strconv.Itoa(topicId))

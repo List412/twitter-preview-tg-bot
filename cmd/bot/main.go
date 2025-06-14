@@ -168,7 +168,7 @@ func main() {
 		RegisterService(commands.InstagramCmd, instaService)
 
 	eventProcessor := telegram.New(
-		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token),
+		tgClient.NewClient(cfg.Telegram.Host, cfg.Telegram.Token, "HTML"),
 		contentProviderManager,
 		cmdParser,
 		usersServ,
