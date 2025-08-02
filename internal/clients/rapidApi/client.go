@@ -3,12 +3,14 @@ package rapidApi
 import (
 	"bytes"
 	"context"
-	"github.com/pkg/errors"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/pkg/errors"
 )
 
 func NewClient(token string) Client {
@@ -47,6 +49,7 @@ func (c Client) DoRequest(ctx context.Context, host string, method string, query
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		slog.Info("Request failed", "status", resp.StatusCode, "path", u.String(), "headers:", resp.Header)
 		return nil, errors.Errorf("error while making request: %s, status: %s", method, resp.Status)
 	}
 

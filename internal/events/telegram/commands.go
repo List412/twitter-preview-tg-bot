@@ -275,7 +275,7 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 					tweet.Tweets[i].Media.Photos = downloadedPhotos
 
 					mediasForEncoding = append(mediasForEncoding, telegram2.MediaForEncoding{
-						Media:     tweet.Tweets[i].Media.Photos,
+						Media:     mediatomedia(tweet.Tweets[i].Media.Photos),
 						MediaType: telegram2.MediaTypePhoto,
 					})
 				}
@@ -288,14 +288,14 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 					tweet.Tweets[i].Media.Videos = downloadedVideos
 
 					mediasForEncoding = append(mediasForEncoding, telegram2.MediaForEncoding{
-						Media:     tweet.Tweets[i].Media.Videos,
+						Media:     mediatomedia(tweet.Tweets[i].Media.Videos),
 						MediaType: telegram2.MediaTypeVideo,
 					})
 				}
 
 				allMedia := append(tweet.Tweets[i].Media.Videos, tweet.Tweets[i].Media.Photos...)
 
-				err = p.tg.SendMedia(chatId, topicId, m, mediasForEncoding, allMedia)
+				err = p.tg.SendMedia(chatId, topicId, m, mediasForEncoding, mediatomedia(allMedia))
 				if err != nil {
 					return errors.Wrap(err, "SendMedia")
 				}
@@ -313,13 +313,13 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 
 				mediasForEncoding := []telegram2.MediaForEncoding{
 					{
-						Media:     tweet.Tweets[i].Media.Videos,
+						Media:     mediatomedia(tweet.Tweets[i].Media.Videos),
 						MediaType: telegram2.MediaTypeVideo,
 					},
 				}
 
 				//err = p.tg.SendVideo(chatId, m, video(tw))
-				err = p.tg.SendMedia(chatId, topicId, m, mediasForEncoding, tweet.Tweets[i].Media.Videos)
+				err = p.tg.SendMedia(chatId, topicId, m, mediasForEncoding, mediatomedia(tweet.Tweets[i].Media.Videos))
 				if err != nil {
 					return errors.Wrap(err, "SendVideo error")
 				}
@@ -339,7 +339,7 @@ func (p *Processor) sendContentAsMessage(chatId, topicId int, tweet tgTypes.Twee
 			if len(tweet.Tweets[i].Media.Photos) >= 2 {
 				mediaForEncoding := []telegram2.MediaForEncoding{
 					{
-						Media:     photos(tw),
+						Media:     mediatomedia(photos(tw)),
 						MediaType: telegram2.MediaTypePhoto,
 					},
 				}
@@ -589,4 +589,18 @@ func (p *Processor) sendStart(chatId, topicId int, username string) error {
 
 func (p *Processor) sendHelp(chatId, topicId int, username string) error {
 	return p.tg.SendMessage(chatId, topicId, msgHelp)
+}
+
+func mediatomedia(object []tgTypes.MediaObject) []telegram2.MediaObject {
+	result := make([]telegram2.MediaObject, len(object))
+
+	for i, obj := range object {
+		result[i] = telegram2.MediaObject{
+			Name:       obj.Name,
+			Url:        obj.Url,
+			Data:       obj.Data,
+			NeedUpload: obj.NeedUpload,
+		}
+	}
+	return result
 }

@@ -2,11 +2,13 @@ package twttrapi
 
 import (
 	"fmt"
-	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram"
-	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
-	"github.com/pkg/errors"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram"
+	"github.com/list412/twitter-preview-tg-bot/internal/events/telegram/tgTypes"
 )
 
 type Downloader interface {
@@ -20,7 +22,14 @@ type Mapper struct {
 
 func (m Mapper) Map(parsedTweet *ParsedThread, id string) (tgTypes.TweetThread, error) {
 	if parsedTweet.Errors != nil || parsedTweet.Error != nil {
-		return tgTypes.TweetThread{}, telegram.ErrApiResponse
+		errMsg := ""
+		if parsedTweet.Error != nil {
+			errMsg = *parsedTweet.Error
+		}
+		if errMsg != "" && len(parsedTweet.Errors) > 0 {
+			errMsg = parsedTweet.Errors[0].Message
+		}
+		return tgTypes.TweetThread{}, errors.Wrap(telegram.ErrApiResponse, errMsg)
 	}
 
 	tweet := tgTypes.TweetThread{}
@@ -131,8 +140,12 @@ func (m Mapper) getMedia(tweet TweetData) (tgTypes.Media, error) {
 }
 
 func (m Mapper) getEntries(tweet *ParsedThread) ([]Entity, error) {
-	if len(tweet.Data.TimelineResponse.Instructions) > 0 {
+	if len(tweet.Data.TimelineResponse.Instructions) > 0 && tweet.Data.TimelineResponse.Instructions[0].Entries != nil {
 		return tweet.Data.TimelineResponse.Instructions[0].Entries, nil
+	}
+
+	if len(tweet.Data.TimelineResponse.Instructions) > 1 && tweet.Data.TimelineResponse.Instructions[1].Entries != nil {
+		return tweet.Data.TimelineResponse.Instructions[1].Entries, nil
 	}
 
 	return nil, errors.New("no timeline instructions found")
